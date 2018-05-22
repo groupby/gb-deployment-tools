@@ -12,8 +12,7 @@ const GbDeploy = require( '../src' );
 // --------------------------------------------------
 // VARS
 // --------------------------------------------------
-/// TODO: Ensure that `-h` flag triggers help menu.
-const { input, flags } = meow( `
+const { input, flags, showHelp } = meow( `
 	USAGE:
 		${pkg.name} exposes the following commands: ${Object.keys( pkg.bin ).join( ' ' )}.
 
@@ -35,6 +34,11 @@ const { input, flags } = meow( `
 		},
 	},
 } );
+
+// For consistency, show help menu on `-h`.
+if ( flags.h ) {
+	showHelp();
+}
 
 // --------------------------------------------------
 // INIT
