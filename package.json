@@ -14,7 +14,9 @@
   "dependencies": {
     "chalk": "^2.4.1",
     "deepmerge": "^2.1.0",
-    "meow": "^5.0.0"
+    "meow": "^5.0.0",
+    "semver": "^5.5.0",
+    "simple-git": "^1.95.0"
   },
   "bin": {
     "gb-deploy": "./bin/index.js"
