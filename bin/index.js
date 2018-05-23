@@ -43,7 +43,7 @@ if ( flags.h ) {
 // --------------------------------------------------
 // INIT
 // --------------------------------------------------
-new GbDeploy( { args: input, opts: flags } )
+new GbDeploy( { builds: input, opts: flags } )
 	.run()
 	.then( () => {
 		/// TODO: Handle success.
