@@ -29,7 +29,7 @@ class GbDeploy {
 	constructor( { builds = [], opts = {} } = {} ) {
 		this.settings = merge( {}, opts ); // Clone `opts`.
 		this.builds = this.parseBuilds( builds );
-		this.validBuilds = this.getValidBuilds( pkg );
+		this.validBuilds = this.getGbDeployBuilds( pkg );
 		this.opts = opts;
 	}
 
@@ -37,19 +37,19 @@ class GbDeploy {
 		return new Promise( async ( resolve, reject ) => {
 			// Ensure that `builds` and `environment` are valid.
 			if ( !this.validateBuilds() ) {
-				reject( '/// TODO: Must include one or more valid `builds`' );
+				reject( `Must include one or more valid builds: <${Object.keys( this.validBuilds ).join( '|' )}>` );
 				return;
 			}
 
 			if ( !this.validateEnvironment() ) {
-				reject( '/// TODO: Must include a valid `environment`' );
+				reject( `Must include a valid environment: <${Object.keys( VALID_ENVIRONMENTS ).join( '|' )}>` );
 				return;
 			}
 
 			if ( this.settings.environment === 'production' ) {
 				// Ensure that each `build` to be deployed includes a version identifier.
 				if ( !this.builds.every( build => !!build.version ) ) {
-					reject( '/// TODO: When deploying to production, all builds must include a version' );
+					reject( 'When deploying to production, all builds must include a version (ie. `<build>@<version>`)' );
 					return;
 				}
 
@@ -58,7 +58,7 @@ class GbDeploy {
 				let branchData = await this.getLocalBranches();
 
 				if ( branchData.current.toLowerCase() !== 'master' ) {
-					reject( '/// TODO: Production deployments can only be completed from the `master` branch.' );
+					reject( `Production deployments can only be completed from the master branch. Current branch: ${branchData.current}` );
 					return;
 				}
 
@@ -71,19 +71,16 @@ class GbDeploy {
 
 				let f = fork( `${__dirname}/scripts/deploy.js` );
 
-				/// TODO: Add fallbacks for data provided to child process via `.send( ... )`
 				f.send( {
 					action: 'DEPLOY:PRODUCTION',
 					payload: {
 						builds: this.flattenBuildData(), // We need to pass in all the supporting info defined in the project's `package.json` file.
-						config: this.getConfig( pkg ),
+						config: this.getGbDeployConfig( pkg ),
 					},
 				} );
 
+				/// TODO: Determine what `run()` should resolve or reject with.
 				f.on( 'close', ( exitCode ) => {
-					console.log( 'CHILD PROCESS CLOSED --> LOGGING OUT `args`' ); /// TEMP
-					console.log( exitCode ); /// TEMP
-
 					switch ( +exitCode ) {
 						case 0:
 							resolve();
@@ -125,26 +122,21 @@ class GbDeploy {
 		return builds.map( build => build.split( '@' ) ).map( ( [ name, version ] ) => ( { name, version } ) );
 	}
 
-	/// TODO: Consolidate.
-	getValidBuilds( pkg ) {
-		return (
-			!!pkg
-			&& typeof pkg === 'object'
-			&& !Array.isArray( pkg )
-			&& pkg[ 'gb-deploy' ]
-			&& pkg[ 'gb-deploy' ][ 'builds' ]
-		) ? pkg[ 'gb-deploy' ][ 'builds' ] : {};
+	getGbDeployBuilds( pkg ) {
+		return this.getGbDeployData( pkg )[ 'builds' ] || {};
 	}
 
-	/// TODO: Consolidate.
-	getConfig( pkg ) {
+	getGbDeployConfig( pkg ) {
+		return this.getGbDeployData( pkg )[ 'config' ] || {};
+	}
+
+	getGbDeployData( pkg ) {
 		return (
 			!!pkg
 			&& typeof pkg === 'object'
 			&& !Array.isArray( pkg )
 			&& pkg[ 'gb-deploy' ]
-			&& pkg[ 'gb-deploy' ][ 'config' ]
-		) ? pkg[ 'gb-deploy' ][ 'config' ] : {};
+		) ? pkg[ 'gb-deploy' ] : {};
 	}
 
 	flattenBuildData() {

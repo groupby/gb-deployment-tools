@@ -166,7 +166,7 @@ process.on( 'message', ( data = {} ) => {
 			doProductionDeployment( data.payload );
 			break;
 		default:
-			console.log( 'FAILED TO MATCH `data,action`, ABORTING' ); /// TEMP
+			console.log( 'FAILED TO MATCH `data.action`, ABORTING' ); /// TEMP
 			process.exit( 1 );
 			break;
 	}
