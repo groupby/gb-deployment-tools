@@ -24,15 +24,19 @@ const git = simpleGit();
 doProductionDeployment = ( data ) => {
 	let {
 		builds = [],
-		config = {}
+		config = {},
+		env = {},
 	} = data;
 
 	let {
 		repoSrc = '',
 		repoDest = '',
 		buildsPath = '',
-		manifests = {},
 	} = config;
+
+	let {
+		manifest,
+	} = env;
 
 	// Prepend `repoDest` with current working directory.
 	repoDest = `${process.cwd()}/${repoDest}`;
@@ -44,9 +48,8 @@ doProductionDeployment = ( data ) => {
 		!repoSrc
 		|| !repoDest
 		|| !buildsPath
-		|| !manifests
-		|| !manifests.production
-		|| typeof manifests.production !== 'string'
+		|| !manifest
+		|| typeof manifest !== 'string'
 	) {
 		console.log( 'RECEIVED INVALID CONFIG DATA, ABORTING' );
 		process.exit( 1 );
@@ -61,7 +64,7 @@ doProductionDeployment = ( data ) => {
 		let buildsDirContents = readdirSync( `${repoDest}/${buildsPath}`, { encoding: 'utf-8' } );
 
 		// Ensure that 'manifest' file exists.
-		if ( !buildsDirContents.includes( manifests.production ) ) {
+		if ( !buildsDirContents.includes( manifest ) ) {
 			console.log( 'DIRECTORY DOES NOT CONTAIN MANIFEST, ABORTING' ); /// TEMP
 			process.exit( 1 );
 		}
@@ -89,7 +92,7 @@ doProductionDeployment = ( data ) => {
 		}
 
 		// Consume, update, and write 'manifest' data.
-		manifestData = require( `${repoDest}/${buildsPath}/${manifests.production}` );
+		manifestData = require( `${repoDest}/${buildsPath}/${manifest}` );
 
 		newManifestData = builds.reduce( ( o, build ) => {
 			return { ...o, ...formatBuildData( build ) }
@@ -97,7 +100,7 @@ doProductionDeployment = ( data ) => {
 
 		/// TODO: Account for write failure.
 		writeFileSync(
-			`${repoDest}/${buildsPath}/${manifests.production}`,
+			`${repoDest}/${buildsPath}/${manifest}`,
 			JSON.stringify( newManifestData, null, 2 ),
 			{ encoding: 'utf-8' }
 		);

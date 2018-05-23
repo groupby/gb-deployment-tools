@@ -17,11 +17,6 @@ const pkg = require( `${process.cwd()}/package` );
 // --------------------------------------------------
 const git = simpleGit();
 
-const VALID_ENVIRONMENTS = {
-	'lower': true,
-	'production': true,
-};
-
 // --------------------------------------------------
 // CORE
 // --------------------------------------------------
@@ -30,6 +25,7 @@ class GbDeploy {
 		this.settings = merge( {}, opts ); // Clone `opts`.
 		this.builds = this.parseBuilds( builds );
 		this.validBuilds = this.getGbDeployBuilds( pkg );
+		this.validEnvironments = this.getGbDeployEnvs( pkg );
 		this.opts = opts;
 	}
 
@@ -42,7 +38,7 @@ class GbDeploy {
 			}
 
 			if ( !this.validateEnvironment() ) {
-				reject( `Must include a valid environment: <${Object.keys( VALID_ENVIRONMENTS ).join( '|' )}>` );
+				reject( `Must include a valid environment: <${Object.keys( this.validEnvironments ).join( '|' )}>` );
 				return;
 			}
 
@@ -76,6 +72,7 @@ class GbDeploy {
 					payload: {
 						builds: this.flattenBuildData(), // We need to pass in all the supporting info defined in the project's `package.json` file.
 						config: this.getGbDeployConfig( pkg ),
+						env: this.getGbDeployEnv( pkg, this.settings.environment ),
 					},
 				} );
 
@@ -109,7 +106,7 @@ class GbDeploy {
 
 	// Validation methods
 	validateEnvironment() {
-		return Object.keys( VALID_ENVIRONMENTS ).includes( this.settings.environment );
+		return Object.keys( this.validEnvironments ).includes( this.settings.environment );
 	}
 
 	validateBuilds() {
@@ -126,9 +123,19 @@ class GbDeploy {
 		return this.getGbDeployData( pkg )[ 'builds' ] || {};
 	}
 
+	getGbDeployEnvs( pkg ) {
+		return this.getGbDeployData( pkg )[ 'environments' ] || {};
+	}
+
+	getGbDeployEnv( pkg, env='' ) {
+		return this.getGbDeployEnvs( pkg )[ env ] || {};
+	}
+
+
 	getGbDeployConfig( pkg ) {
 		return this.getGbDeployData( pkg )[ 'config' ] || {};
 	}
+
 
 	getGbDeployData( pkg ) {
 		return (
