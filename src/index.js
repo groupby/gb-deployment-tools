@@ -76,10 +76,7 @@ class GbDeploy {
 					action: 'DEPLOY:PRODUCTION',
 					payload: {
 						builds: this.flattenBuildData(), // We need to pass in all the supporting info defined in the project's `package.json` file.
-						repoSrc: pkg[ 'gb-deploy' ][ 'config' ][ 'repoSrc' ],
-						repoDest: `${process.cwd()}/${pkg[ 'gb-deploy' ][ 'config' ][ 'repoDest' ]}`,
-						buildsPath: pkg[ 'gb-deploy' ][ 'config' ][ 'buildsPath' ],
-						manifestName: pkg[ 'gb-deploy' ][ 'config' ][ 'manifests' ][ 'production' ],
+						config: this.getConfig( pkg ),
 					},
 				} );
 
@@ -128,6 +125,7 @@ class GbDeploy {
 		return builds.map( build => build.split( '@' ) ).map( ( [ name, version ] ) => ( { name, version } ) );
 	}
 
+	/// TODO: Consolidate.
 	getValidBuilds( pkg ) {
 		return (
 			!!pkg
@@ -136,6 +134,17 @@ class GbDeploy {
 			&& pkg[ 'gb-deploy' ]
 			&& pkg[ 'gb-deploy' ][ 'builds' ]
 		) ? pkg[ 'gb-deploy' ][ 'builds' ] : {};
+	}
+
+	/// TODO: Consolidate.
+	getConfig( pkg ) {
+		return (
+			!!pkg
+			&& typeof pkg === 'object'
+			&& !Array.isArray( pkg )
+			&& pkg[ 'gb-deploy' ]
+			&& pkg[ 'gb-deploy' ][ 'config' ]
+		) ? pkg[ 'gb-deploy' ][ 'config' ] : {};
 	}
 
 	flattenBuildData() {
