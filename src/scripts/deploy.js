@@ -27,15 +27,12 @@ doDeploy = ( data ) => {
 	let {
 		repoSrc = '',
 		repoDest = '',
-		repoBuildsPath = '',
+		repoBuildsPath = './',
 	} = config;
 
 	let {
 		manifest,
 	} = env;
-
-	// Prepend `repoDest` with current working directory.
-	repoDest = `${process.cwd()}/${repoDest}`;
 
 	if (
 		!repoSrc
@@ -46,6 +43,9 @@ doDeploy = ( data ) => {
 	) {
 		process.exit( 1 );
 	}
+
+	// Prepend `repoDest` with current working directory.
+	repoDest = `${process.cwd()}/${repoDest}`;
 
 	let buildsDirContents = readdirSync( `${repoDest}/${repoBuildsPath}`, { encoding: 'utf-8' } );
 
@@ -86,7 +86,7 @@ doDeploy = ( data ) => {
 			process.exit( 1 );
 		}
 
-		git.commit( '/// TEMP: TEST COMMIT', ( err, data ) => {
+		git.commit( '/// TEMP: <env> <build>@<version>', ( err, data ) => {
 			if ( err ) {
 				process.exit( 1 );
 			}
