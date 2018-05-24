@@ -3,6 +3,7 @@
 // --------------------------------------------------
 // Node
 const { fork } = require( 'child_process' );
+const path = require( 'path' );
 
 // Vendor
 const merge = require( 'deepmerge' );
@@ -22,35 +23,37 @@ const git = simpleGit();
 // --------------------------------------------------
 class GbDeploy {
 	constructor( { builds = [], opts = {} } = {} ) {
-		this.settings = merge( {}, opts ); // Clone `opts`.
-		this.builds = this.parseBuilds( builds );
-		this.validBuilds = this.getGbDeployBuilds( pkg );
-		this.validEnvironments = this.getGbDeployEnvs( pkg );
+		this.pkg = pkg || {};
+		this.settings = merge( {}, opts ); // Since we're not merging in any defaults, this is a clone of `opts`.
 		this.opts = opts;
+		this.builds = this.parseBuilds( builds );
 	}
 
 	run() {
 		return new Promise( async ( resolve, reject ) => {
 			// Ensure that `builds` and `environment` are valid.
 			if ( !this.validateBuilds() ) {
-				reject( `Must include one or more valid builds: <${Object.keys( this.validBuilds ).join( '|' )}>` );
+				reject( `Must include one or more valid builds: <${Object.keys( this.getGbDeployBuilds() ).join( '|' )}>` );
 				return;
 			}
 
 			if ( !this.validateEnvironment() ) {
-				reject( `Must include a valid environment: <${Object.keys( this.validEnvironments ).join( '|' )}>` );
+				reject( `Must include a valid environment: <${Object.keys( this.getGbDeployEnvs() ).join( '|' )}>` );
 				return;
 			}
 
+			// Perform additional validation for production deployments.
 			if ( this.settings.environment === 'production' ) {
-				// Ensure that each `build` to be deployed includes a version identifier.
-				if ( !this.builds.every( build => !!build.version ) ) {
-					reject( 'When deploying to production, all builds must include a version (ie. `<build>@<version>`)' );
+				// Ensure that each `build` to be deployed includes a valid version identifier.
+				// NOTE: This prevents 'feature' builds from being deploy to prod.
+				if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
+					reject( 'When deploying to production, all builds must include a semver-compliant version identifier (ie. `<build>@<version>`)' );
 					return;
 				}
 
 				// Ensure that current branch is `master`.
 				/// TODO: Consider doing this at instantiation time?
+				/// NOTE: This may not actually be required, as production deployments are only able to update 'manifest' files.
 				let branchData = await this.getLocalBranches();
 
 				if ( branchData.current.toLowerCase() !== 'master' ) {
@@ -64,90 +67,91 @@ class GbDeploy {
 				// if ( !semver.valid( commitData.all[ 0 ].message ) ) {
 				// 	reject( '/// TODO: When deploying to production, the latest commit message must be a semver compliant release identifier.' );
 				// }
-
-				let f = fork( `${__dirname}/scripts/deploy.js` );
-
-				f.send( {
-					action: 'DEPLOY:PRODUCTION',
-					payload: {
-						builds: this.flattenBuildData(), // We need to pass in all the supporting info defined in the project's `package.json` file.
-						config: this.getGbDeployConfig( pkg ),
-						env: this.getGbDeployEnv( pkg, this.settings.environment ),
-					},
-				} );
-
-				/// TODO: Determine what `run()` should resolve or reject with.
-				f.on( 'close', ( exitCode ) => {
-					switch ( +exitCode ) {
-						case 0:
-							resolve();
-							break;
-						default:
-							reject();
-							break;
-					}
-				} );
-			} else {
-				// ELSE (ie. `e` IS NOT `production`)`
-					// IF `e` IS VALID
-						// VALIDATE BUILDS
-							// GENERATE BUILDS
-							// CLONE `cust_<cust-id>_builds` REPO
-							// MIGRATE BUILD FILES TO NEW REPO, APPEND DATE AND SHA INFO
-							// UPDATE CORRECT 'MANIFEST' FILE
-							// COMMIT UPDATES
-							// PUSH TO REMOTE
-
-				console.log( 'IS NOT PRODUCTION' ); /// TEMP
-				resolve( true ); /// TEMP
 			}
+
+			await this.doClone();
+
+			// If not deploying to production, compile any builds which do not include a valid version identifier.
+			if ( !this.builds.every( b => semver.valid( b.version ) ) ) {
+				await this.doBuild();
+				await this.doMigrate( this.builds );
+			}
+
+			await this.doDeploy();
+			await this.doCleanup();
+
+			resolve( true );
+			return;
 		} );
 	}
 
-	// Validation methods
 	validateEnvironment() {
-		return Object.keys( this.validEnvironments ).includes( this.settings.environment );
+		return Object.keys( this.getGbDeployEnvs() ).includes( this.settings.environment );
 	}
 
 	validateBuilds() {
-		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.validBuilds ).includes( build.name ) );
+		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getGbDeployBuilds() ).includes( build.name ) );
 	}
 
 	parseBuilds( builds=[] ) {
+		let validBuilds = this.getGbDeployBuilds();
+
 		builds = Array.isArray( builds ) ? builds : [ builds ];
 
-		return builds.map( build => build.split( '@' ) ).map( ( [ name, version ] ) => ( { name, version } ) );
+		return builds
+			.map( build => build.split( '@' ) )
+			.map( ( [ name, version ] ) => ( { name, version } ) )
+			.map( build => ( semver.valid( build.version ) ? build : { ...build, ...{ version: this.getTransientVersion() } } ) )
+			.map( build => ( validBuilds[ build.name ] ? { ...validBuilds[ build.name ], ...build } : build ) )
+			.map( build => ( { ...build, ...{ resolvedFiles: this.getResolvedFileNames( build ) } } ) );
 	}
 
-	getGbDeployBuilds( pkg ) {
-		return this.getGbDeployData( pkg )[ 'builds' ] || {};
+	/// TODO
+	getTransientVersion() {
+		return new Date().getTime();
 	}
 
-	getGbDeployEnvs( pkg ) {
-		return this.getGbDeployData( pkg )[ 'environments' ] || {};
+	getResolvedFileNames( build = {} ) {
+		if (
+			!build
+			|| typeof build !== 'object'
+			|| !build.files
+			|| !build.files.length
+		) {
+			return null;
+		}
+
+		return build.files
+			.map( file => {
+				let fileData = path.parse( file );
+				return `${fileData.name}-${build.version}${fileData.ext}`;
+			} );
 	}
 
-	getGbDeployEnv( pkg, env='' ) {
-		return this.getGbDeployEnvs( pkg )[ env ] || {};
+	getGbDeployBuilds() {
+		return this.getGbDeployData()[ 'builds' ] || {};
+	}
+
+	getGbDeployEnvs() {
+		return this.getGbDeployData()[ 'environments' ] || {};
+	}
+
+	getGbDeployEnv( env = '' ) {
+		return this.getGbDeployEnvs()[ env ] || {};
 	}
 
 
-	getGbDeployConfig( pkg ) {
-		return this.getGbDeployData( pkg )[ 'config' ] || {};
+	getGbDeployConfig() {
+		return this.getGbDeployData()[ 'config' ] || {};
 	}
 
-
-	getGbDeployData( pkg ) {
+	getGbDeployData() {
 		return (
-			!!pkg
-			&& typeof pkg === 'object'
-			&& !Array.isArray( pkg )
-			&& pkg[ 'gb-deploy' ]
+			!!this.pkg
+			&& typeof this.pkg === 'object'
+			&& !Array.isArray()
+			&& this.pkg[ 'gb-deploy' ]
 		) ? pkg[ 'gb-deploy' ] : {};
-	}
-
-	flattenBuildData() {
-		return this.builds.map( build => ( { ...this.validBuilds[ build.name ], ...build } ) );
 	}
 
 	getLocalBranches() {
@@ -172,6 +176,133 @@ class GbDeploy {
 				}
 			} );
 		} );
+	}
+
+	doClone() {
+		return new Promise( ( resolve, reject ) => {
+			let f = fork( `${__dirname}/scripts/clone.js` );
+
+			f.send( {
+				action: 'CLONE',
+				payload: {
+					config: this.getGbDeployConfig(),
+				},
+			} );
+
+			f.on( 'close', ( exitCode ) => {
+				switch ( +exitCode ) {
+					case 0:
+						resolve();
+						break;
+					default:
+						reject();
+						break;
+				}
+			} );
+		} );
+	}
+
+	doBuild() {
+		return new Promise( ( resolve, reject ) => {
+			let config = this.getGbDeployConfig();
+
+			let {
+				localBuildsPath = './',
+			} = config;
+
+			let f = fork( `${__dirname}/scripts/build.js`, [], { cwd: `${process.cwd()}/${localBuildsPath}` } );
+
+			f.send( {
+				action: 'BUILD',
+				payload: {
+					env: this.getGbDeployEnv( this.settings.environment ),
+				},
+			} );
+
+			f.on( 'close', ( exitCode ) => {
+				switch ( +exitCode ) {
+					case 0:
+						resolve();
+						break;
+					default:
+						reject();
+						break;
+				}
+			} );
+		} );
+	}
+
+	doMigrate( builds=[] ) {
+		return new Promise( ( resolve, reject ) => {
+			let config = this.getGbDeployConfig();
+
+			let f = fork( `${__dirname}/scripts/migrate.js` );
+
+			/// TODO: Simplify/use `resolvedFiles`
+			let paths = builds
+				.filter( build => !semver.valid( build.verison ) )
+				.map( build => {
+					return build.files.map( file => {
+						let fileData = path.parse( file );
+
+						/// TODO: Ensure that dir. refs. include trailing '/'.
+
+						return {
+							src: file,
+							dest: `${config.repoDest}/${config.repoBuildsPath || ''}${fileData.name}-${build.version}${fileData.ext}`,
+						}
+					} );
+				} )
+				.reduce( ( acc, arr ) => { return [ ...acc, ...arr ] }, [] );
+
+			f.send( {
+				action: 'MIGRATE',
+				payload: {
+					paths,
+				},
+			} );
+
+			f.on( 'close', ( exitCode ) => {
+				switch ( +exitCode ) {
+					case 0:
+						resolve();
+						break;
+					default:
+						reject();
+						break;
+				}
+			} );
+		} );
+	}
+
+	doDeploy() {
+		return new Promise( ( resolve, reject ) => {
+			let f = fork( `${__dirname}/scripts/deploy.js` );
+
+			f.send( {
+				action: 'DEPLOY',
+				payload: {
+					builds: this.builds,
+					config: this.getGbDeployConfig(),
+					env: this.getGbDeployEnv( this.settings.environment ),
+				},
+			} );
+
+			f.on( 'clone', ( exitCode ) => {
+				switch ( +exitCode ) {
+					case 0:
+						resolve();
+						break;
+					default:
+						reject();
+						break;
+				}
+			} );
+		} );
+	}
+
+	doCleanup() {
+		return Promise.resolve( true ); /// TEMP
 	}
 }
 
