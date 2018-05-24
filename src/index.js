@@ -42,12 +42,10 @@ class GbDeploy {
 	run() {
 		return new Promise( async ( resolve, reject ) => {
 			try {
-				// Ensure that current project includes required config.
 				if ( !this.validateData() ) {
 					throw new Error( 'Whoops, looks like this project is not set up for use with `GbDeploy`' );
 				}
 
-				// Ensure that `builds` and `environment` are valid.
 				if ( !this.validateBuilds() ) {
 					throw new Error( `Must include one or more valid builds: <${Object.keys( this.getData( GB_DEPLOY_BUILDS_KEY ) ).join( '|' )}>` );
 				}
@@ -67,7 +65,7 @@ class GbDeploy {
 				await this.doClone();
 
 				// If not deploying to production, compile any builds which do not include a valid version identifier.
-				if ( !this.builds.every( b => semver.valid( b.version ) ) ) {
+				if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
 					await this.doBuild();
 					await this.doMigrate( this.builds );
 				}
@@ -162,12 +160,7 @@ class GbDeploy {
 	 * @return {Array}
 	 */
 	getResolvedFileNames( build = {} ) {
-		if (
-			!build
-			|| typeof build !== 'object'
-			|| !build.files
-			|| !build.files.length
-		) {
+		if ( !build || typeof build !== 'object' || !build.files || !build.files.length ) {
 			return null;
 		}
 
@@ -244,9 +237,7 @@ class GbDeploy {
 		return new Promise( ( resolve, reject ) => {
 			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
 
-			let {
-				localBuildsPath = './',
-			} = config;
+			let { localBuildsPath = './' } = config;
 
 			localBuildsPath = utils.normalizeDir( localBuildsPath );
 
@@ -281,10 +272,7 @@ class GbDeploy {
 		return new Promise( ( resolve, reject ) => {
 			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
 
-			let {
-				repoDest = './',
-				repoBuildsPath = './',
-			} = config;
+			let { repoDest = './', repoBuildsPath = './' } = config;
 
 			repoDest = utils.normalizeDir( repoDest );
 			repoBuildsPath = utils.normalizeDir( repoBuildsPath );
@@ -362,25 +350,16 @@ class GbDeploy {
 		return new Promise( ( resolve, reject ) => {
 			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
 
-			let {
-				repoDest = './',
-			} = config;
+			let { repoDest = './' } = config;
 
 			repoDest = utils.normalizeDir( repoDest );
 
-			if (
-				!repoDest
-			) {
-				reject();
+			if ( !repoDest ) {
+				reject( new Error( 'Failed to clean up. Unable to begin removal process.' ) );
 				return;
 			}
 
-			del( repoDest ).then( paths => {
-				resolve();
-			} ).catch( err => {
-				console.log( err );
-				reject();
-			} );
+			del( repoDest ).then( resolve, reject );
 		} );
 	}
 }
