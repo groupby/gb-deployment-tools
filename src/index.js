@@ -8,6 +8,7 @@ const path = require( 'path' );
 // Vendor
 const del = require( 'del' );
 const merge = require( 'deepmerge' );
+const moment = require( 'moment' );
 const semver = require( 'semver' );
 
 // Project
@@ -87,9 +88,10 @@ class GbDeploy {
 			.map( build => ( { ...build, ...{ resolvedFiles: this.getResolvedFileNames( build ) } } ) );
 	}
 
-	/// TODO
 	getTransientVersion() {
-		return new Date().getTime();
+		let m = moment();
+
+		return `${m.format( 'YYYY-MM-DD' )}-${m.unix()}`;
 	}
 
 	getResolvedFileNames( build = {} ) {
