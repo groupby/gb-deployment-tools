@@ -13,6 +13,7 @@ const semver = require( 'semver' );
 
 // Project
 const pkg = require( `${process.cwd()}/package` );
+const utils = require( './utils' );
 
 // --------------------------------------------------
 // DECLARE VARS
@@ -169,6 +170,8 @@ class GbDeploy {
 				localBuildsPath = './',
 			} = config;
 
+			localBuildsPath = utils.normalizeDir( localBuildsPath );
+
 			let f = fork( `${__dirname}/scripts/build.js`, [], { cwd: `${process.cwd()}/${localBuildsPath}` } );
 
 			f.send( {
@@ -195,22 +198,23 @@ class GbDeploy {
 		return new Promise( ( resolve, reject ) => {
 			let config = this.getGbDeployConfig();
 
+			let {
+				repoDest = './',
+				repoBuildsPath = './',
+			} = config;
+
+			repoDest = utils.normalizeDir( repoDest );
+			repoBuildsPath = utils.normalizeDir( repoDest );
+
 			let f = fork( `${__dirname}/scripts/migrate.js` );
 
-			/// TODO: Simplify/use `resolvedFiles`
 			let paths = builds
 				.filter( build => !semver.valid( build.verison ) )
 				.map( build => {
-					return build.files.map( file => {
-						let fileData = path.parse( file );
-
-						/// TODO: Ensure that dir. refs. include trailing '/'.
-
-						return {
-							src: file,
-							dest: `${config.repoDest}/${config.repoBuildsPath || ''}${fileData.name}-${build.version}${fileData.ext}`,
-						}
-					} );
+					return build.files.map( file, i => ( {
+						src: file,
+						dest: `${repoDest}${repoBuildsPath}${build.resolvedFiles[ i ]}`,
+					} ) );
 				} )
 				.reduce( ( acc, arr ) => { return [ ...acc, ...arr ] }, [] );
 
@@ -265,8 +269,10 @@ class GbDeploy {
 			let config = this.getGbDeployConfig();
 
 			let {
-				repoDest = '',
+				repoDest = './',
 			} = config;
+
+			repoDest = utils.normalizeDir( repoDest );
 
 			if (
 				!repoDest
