@@ -50,5 +50,5 @@ new GbDeploy( { builds: input, opts: flags } )
 	} )
 	.catch( ( err ) => {
 		/// TODO: Handle error.
-		console.log( chalk.red( !!err.message ? err.message : err ) );
+		console.log( chalk.red( err && err.message ? err.message : err ) );
 	} );
