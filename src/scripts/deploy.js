@@ -9,6 +9,9 @@ const path = require( 'path' );
 // Vendor
 const simpleGit = require( 'simple-git' );
 
+// Project
+const utils = require( '../utils' );
+
 // --------------------------------------------------
 // DECLARE VARS
 // --------------------------------------------------
@@ -110,14 +113,20 @@ doDeploy = ( data ) => {
  */
 /// TODO: Refactor
 formatBuildData = ( build ) => {
+	let {
+		resolvedFilePrefix = ''
+	} = build;
+
+	resolvedFilePrefix = utils.normalizeDir( resolvedFilePrefix );
+
 	let bundleData = build.resolvedFiles.map( file => {
 		let fileData = path.parse( file );
 
 		switch ( fileData.ext ) {
 			case '.js':
-				return { script: `${build.resolvedFilePrefix || ''}${file}` };
+				return { script: `${resolvedFilePrefix}${file}` };
 			case '.css':
-				return { styles: `${build.resolvedFilePrefix || ''}${file}` };
+				return { styles: `${resolvedFilePrefix}${file}` };
 			default:
 				return {};
 		}
