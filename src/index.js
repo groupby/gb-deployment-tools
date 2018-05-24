@@ -32,39 +32,46 @@ class GbDeploy {
 
 	run() {
 		return new Promise( async ( resolve, reject ) => {
-			// Ensure that `builds` and `environment` are valid.
-			if ( !this.validateBuilds() ) {
-				reject( `Must include one or more valid builds: <${Object.keys( this.getGbDeployBuilds() ).join( '|' )}>` );
-				return;
-			}
-
-			if ( !this.validateEnvironment() ) {
-				reject( `Must include a valid environment: <${Object.keys( this.getGbDeployEnvs() ).join( '|' )}>` );
-				return;
-			}
-
-			// Perform additional validation for production deployments.
-			if ( this.settings.environment === 'production' ) {
-				// Prevent 'feature' branches from building/deploying to production.
-				if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
-					reject( 'When deploying to production, all builds must include a semver-compliant version identifier (ie. `<build>@<version>`)' );
-					return;
+			try {
+				// Ensure that current project includes required config.
+				if ( !this.hasGbDeployData() ) {
+					throw new Error( 'Whoops, looks like this project is not set up for use with `GbDeploy`' );;
 				}
+
+				// Ensure that `builds` and `environment` are valid.
+				if ( !this.validateBuilds() ) {
+					throw new Error( `Must include one or more valid builds: <${Object.keys( this.getGbDeployBuilds() ).join( '|' )}>` );;
+				}
+
+				if ( !this.validateEnvironment() ) {
+					throw new Error( `Must include a valid environment: <${Object.keys( this.getGbDeployEnvs() ).join( '|' )}>` );;
+				}
+
+				// Perform additional validation for production deployments.
+				if ( this.settings.environment === 'production' ) {
+					// Prevent 'feature' branches from building/deploying to production.
+					if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
+						throw new Error( 'When deploying to production, all builds must include a semver-compliant version identifier (ie. `<build>@<version>`)' );;
+					}
+				}
+
+				await this.doClone();
+
+				// If not deploying to production, compile any builds which do not include a valid version identifier.
+				if ( !this.builds.every( b => semver.valid( b.version ) ) ) {
+					await this.doBuild();
+					await this.doMigrate( this.builds );
+				}
+
+				await this.doDeploy();
+				await this.doCleanup();
+
+				resolve( true ); /// TODO: Determine 'success' message.
+				return;
+			} catch ( err ) {
+				/// TODO: Ensure clean up.
+				reject( err );
 			}
-
-			await this.doClone();
-
-			// If not deploying to production, compile any builds which do not include a valid version identifier.
-			if ( !this.builds.every( b => semver.valid( b.version ) ) ) {
-				await this.doBuild();
-				await this.doMigrate( this.builds );
-			}
-
-			await this.doDeploy();
-			await this.doCleanup();
-
-			resolve( true );
-			return;
 		} );
 	}
 
@@ -107,8 +114,9 @@ class GbDeploy {
 
 		return build.files
 			.map( file => {
-				let fileData = path.parse( file );
-				return `${fileData.name}-${build.version}${fileData.ext}`;
+				let fileData = path.parse( file.src );
+
+				return `${file.base || fileData.name}-${build.version}${fileData.ext}`;
 			} );
 	}
 
@@ -124,7 +132,6 @@ class GbDeploy {
 		return this.getGbDeployEnvs()[ env ] || {};
 	}
 
-
 	getGbDeployConfig() {
 		return this.getGbDeployData()[ 'config' ] || {};
 	}
@@ -136,6 +143,17 @@ class GbDeploy {
 			&& !Array.isArray()
 			&& this.pkg[ 'gb-deploy' ]
 		) ? pkg[ 'gb-deploy' ] : {};
+	}
+
+	hasGbDeployData() {
+		let vals = [
+			this.getGbDeployBuilds(),
+			this.getGbDeployConfig(),
+			this.getGbDeployEnvs(),
+		];
+
+		/// TODO: Seems brittle...
+		return vals.every( val => ( !!val && JSON.stringify( val ) !== '{}' ) );
 	}
 
 	doClone() {
@@ -155,7 +173,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject();
+						reject( new Error( 'Failed to clone repository. Please ensure that the project contains valid `repoSrc` and `repoDest` data.' ) );
 						break;
 				}
 			} );
@@ -187,7 +205,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject();
+						reject( new Error( 'Failed to build. Please ensure that the target environment includes a valid `buildScript`' ) );
 						break;
 				}
 			} );
@@ -204,15 +222,16 @@ class GbDeploy {
 			} = config;
 
 			repoDest = utils.normalizeDir( repoDest );
-			repoBuildsPath = utils.normalizeDir( repoDest );
+			repoBuildsPath = utils.normalizeDir( repoBuildsPath );
 
 			let f = fork( `${__dirname}/scripts/migrate.js` );
 
+			/// TODO: Ensure that each `build` object includes a `files` arr.
 			let paths = builds
 				.filter( build => !semver.valid( build.verison ) )
 				.map( build => {
-					return build.files.map( file, i => ( {
-						src: file,
+					return build.files.map( ( file, i ) => ( {
+						src: file.src,
 						dest: `${repoDest}${repoBuildsPath}${build.resolvedFiles[ i ]}`,
 					} ) );
 				} )
@@ -231,7 +250,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject();
+						reject( new Error( 'Failed to migrate files. Please ensure that all file references are valid.' ) );
 						break;
 				}
 			} );
@@ -257,7 +276,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject();
+						reject( new Error( 'Failed to deploy updates.' ) );
 						break;
 				}
 			} );
