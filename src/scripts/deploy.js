@@ -89,7 +89,9 @@ doDeploy = ( data ) => {
 			process.exit( 1 );
 		}
 
-		git.commit( '/// TEMP: <env> <build>@<version>', ( err, data ) => {
+		let buildStrings = builds.map( build => `${build.name}@${build.version}` );
+
+		git.commit( `[${env.name}] ${buildStrings.join( '; ')}`, ( err, data ) => {
 			if ( err ) {
 				process.exit( 1 );
 			}

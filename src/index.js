@@ -125,7 +125,25 @@ class GbDeploy {
 	}
 
 	getGbDeployEnvs() {
-		return this.getGbDeployData()[ 'environments' ] || {};
+		let envs = this.getGbDeployData()[ 'environments' ];
+
+		if ( !envs || typeof envs !== 'object' ) {
+			return {};
+		}
+
+		// Add `name` key to each 'env' object, smoosh 'em pack together, and return the result.
+		return Object.keys( envs )
+			.map( env => {
+				return {
+					[ env ]: {
+						...envs[ env ],
+						name: env,
+					}
+				};
+			} )
+			.reduce( ( o, data ) => {
+				return { ...o, ...data };
+			}, {} );
 	}
 
 	getGbDeployEnv( env = '' ) {
