@@ -6,9 +6,9 @@ const { fork } = require( 'child_process' );
 const path = require( 'path' );
 
 // Vendor
+const del = require( 'del' );
 const merge = require( 'deepmerge' );
 const semver = require( 'semver' );
-const simpleGit = require( 'simple-git' );
 
 // Project
 const pkg = require( `${process.cwd()}/package` );
@@ -16,7 +16,6 @@ const pkg = require( `${process.cwd()}/package` );
 // --------------------------------------------------
 // DECLARE VARS
 // --------------------------------------------------
-const git = simpleGit();
 
 // --------------------------------------------------
 // CORE
@@ -44,29 +43,11 @@ class GbDeploy {
 
 			// Perform additional validation for production deployments.
 			if ( this.settings.environment === 'production' ) {
-				// Ensure that each `build` to be deployed includes a valid version identifier.
-				// NOTE: This prevents 'feature' builds from being deploy to prod.
+				// Prevent 'feature' branches from building/deploying to production.
 				if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
 					reject( 'When deploying to production, all builds must include a semver-compliant version identifier (ie. `<build>@<version>`)' );
 					return;
 				}
-
-				// Ensure that current branch is `master`.
-				/// TODO: Consider doing this at instantiation time?
-				/// NOTE: This may not actually be required, as production deployments are only able to update 'manifest' files.
-				let branchData = await this.getLocalBranches();
-
-				if ( branchData.current.toLowerCase() !== 'master' ) {
-					reject( `Production deployments can only be completed from the master branch. Current branch: ${branchData.current}` );
-					return;
-				}
-
-				// Ensure that latest commit is a version.
-				// let commitData = await this.getCommits();
-				//
-				// if ( !semver.valid( commitData.all[ 0 ].message ) ) {
-				// 	reject( '/// TODO: When deploying to production, the latest commit message must be a semver compliant release identifier.' );
-				// }
 			}
 
 			await this.doClone();
@@ -152,30 +133,6 @@ class GbDeploy {
 			&& !Array.isArray()
 			&& this.pkg[ 'gb-deploy' ]
 		) ? pkg[ 'gb-deploy' ] : {};
-	}
-
-	getLocalBranches() {
-		return new Promise( ( resolve, reject ) => {
-			git.branchLocal( ( err, data ) => {
-				if ( err ) {
-					reject( err );
-				} else {
-					resolve( data );
-				}
-			} );
-		} );
-	}
-
-	getCommits() {
-		return new Promise( ( resolve, reject ) => {
-			git.log( [], ( err, data ) => {
-				if ( err ) {
-					reject( err );
-				} else {
-					resolve( data );
-				}
-			} );
-		} );
 	}
 
 	doClone() {
@@ -288,7 +245,7 @@ class GbDeploy {
 				},
 			} );
 
-			f.on( 'clone', ( exitCode ) => {
+			f.on( 'close', ( exitCode ) => {
 				switch ( +exitCode ) {
 					case 0:
 						resolve();
@@ -302,7 +259,27 @@ class GbDeploy {
 	}
 
 	doCleanup() {
-		return Promise.resolve( true ); /// TEMP
+		return new Promise( ( resolve, reject ) => {
+			let config = this.getGbDeployConfig();
+
+			let {
+				repoDest = '',
+			} = config;
+
+			if (
+				!repoDest
+			) {
+				reject();
+				return;
+			}
+
+			del( repoDest ).then( paths => {
+				resolve();
+			} ).catch( err => {
+				console.log( err );
+				reject();
+			} );
+		} );
 	}
 }
 
