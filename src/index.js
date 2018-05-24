@@ -18,6 +18,10 @@ const utils = require( './utils' );
 // --------------------------------------------------
 // DECLARE VARS
 // --------------------------------------------------
+const GB_DEPLOY_KEY = 'gb-deploy';
+const GB_DEPLOY_CONFIG_KEY = 'config';
+const GB_DEPLOY_BUILDS_KEY = 'builds';
+const GB_DEPLOY_ENVS_KEY = 'environments';
 
 // --------------------------------------------------
 // CORE
@@ -35,23 +39,23 @@ class GbDeploy {
 			try {
 				// Ensure that current project includes required config.
 				if ( !this.hasGbDeployData() ) {
-					throw new Error( 'Whoops, looks like this project is not set up for use with `GbDeploy`' );;
+					throw new Error( 'Whoops, looks like this project is not set up for use with `GbDeploy`' );
 				}
 
 				// Ensure that `builds` and `environment` are valid.
 				if ( !this.validateBuilds() ) {
-					throw new Error( `Must include one or more valid builds: <${Object.keys( this.getGbDeployBuilds() ).join( '|' )}>` );;
+					throw new Error( `Must include one or more valid builds: <${Object.keys( this.getData( GB_DEPLOY_BUILDS_KEY ) ).join( '|' )}>` );
 				}
 
 				if ( !this.validateEnvironment() ) {
-					throw new Error( `Must include a valid environment: <${Object.keys( this.getGbDeployEnvs() ).join( '|' )}>` );;
+					throw new Error( `Must include a valid environment: <${Object.keys( this.getData( GB_DEPLOY_ENVS_KEY ) ).join( '|' )}>` );
 				}
 
 				// Perform additional validation for production deployments.
 				if ( this.settings.environment === 'production' ) {
 					// Prevent 'feature' branches from building/deploying to production.
 					if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
-						throw new Error( 'When deploying to production, all builds must include a semver-compliant version identifier (ie. `<build>@<version>`)' );;
+						throw new Error( 'When deploying to production, all builds must include a semver-compliant version identifier (ie. `<build>@<version>`)' );
 					}
 				}
 
@@ -76,15 +80,15 @@ class GbDeploy {
 	}
 
 	validateEnvironment() {
-		return Object.keys( this.getGbDeployEnvs() ).includes( this.settings.environment );
+		return Object.keys( this.getData( GB_DEPLOY_ENVS_KEY ) ).includes( this.settings.environment );
 	}
 
 	validateBuilds() {
-		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getGbDeployBuilds() ).includes( build.name ) );
+		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getData( GB_DEPLOY_BUILDS_KEY ) ).includes( build.name ) );
 	}
 
 	parseBuilds( builds=[] ) {
-		let validBuilds = this.getGbDeployBuilds();
+		let validBuilds = this.getData( GB_DEPLOY_BUILDS_KEY );
 
 		builds = Array.isArray( builds ) ? builds : [ builds ];
 
@@ -120,54 +124,25 @@ class GbDeploy {
 			} );
 	}
 
-	getGbDeployBuilds() {
-		return this.getGbDeployData()[ 'builds' ] || {};
+	getPkg() {
+		return this.pkg || {};
 	}
 
-	getGbDeployEnvs() {
-		let envs = this.getGbDeployData()[ 'environments' ];
+	getData( key ) {
+		let data = this.getPkg()[ GB_DEPLOY_KEY ];
 
-		if ( !envs || typeof envs !== 'object' ) {
+		if ( !data || typeof data !== 'object' ) {
 			return {};
 		}
 
-		// Add `name` key to each 'env' object, smoosh 'em pack together, and return the result.
-		return Object.keys( envs )
-			.map( env => {
-				return {
-					[ env ]: {
-						...envs[ env ],
-						name: env,
-					}
-				};
-			} )
-			.reduce( ( o, data ) => {
-				return { ...o, ...data };
-			}, {} );
-	}
-
-	getGbDeployEnv( env = '' ) {
-		return this.getGbDeployEnvs()[ env ] || {};
-	}
-
-	getGbDeployConfig() {
-		return this.getGbDeployData()[ 'config' ] || {};
-	}
-
-	getGbDeployData() {
-		return (
-			!!this.pkg
-			&& typeof this.pkg === 'object'
-			&& !Array.isArray()
-			&& this.pkg[ 'gb-deploy' ]
-		) ? pkg[ 'gb-deploy' ] : {};
+		return data[ key ] || {};
 	}
 
 	hasGbDeployData() {
 		let vals = [
-			this.getGbDeployBuilds(),
-			this.getGbDeployConfig(),
-			this.getGbDeployEnvs(),
+			this.getData( GB_DEPLOY_BUILDS_KEY ),
+			this.getData( GB_DEPLOY_ENVS_KEY ),
+			this.getData( GB_DEPLOY_CONFIG_KEY ),
 		];
 
 		/// TODO: Seems brittle...
@@ -181,7 +156,7 @@ class GbDeploy {
 			f.send( {
 				action: 'CLONE',
 				payload: {
-					config: this.getGbDeployConfig(),
+					config: this.getData( GB_DEPLOY_CONFIG_KEY ),
 				},
 			} );
 
@@ -200,7 +175,7 @@ class GbDeploy {
 
 	doBuild() {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getGbDeployConfig();
+			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
 
 			let {
 				localBuildsPath = './',
@@ -213,7 +188,7 @@ class GbDeploy {
 			f.send( {
 				action: 'BUILD',
 				payload: {
-					env: this.getGbDeployEnv( this.settings.environment ),
+					env: this.getData( GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
 				},
 			} );
 
@@ -232,7 +207,7 @@ class GbDeploy {
 
 	doMigrate( builds=[] ) {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getGbDeployConfig();
+			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
 
 			let {
 				repoDest = './',
@@ -283,8 +258,8 @@ class GbDeploy {
 				action: 'DEPLOY',
 				payload: {
 					builds: this.builds,
-					config: this.getGbDeployConfig(),
-					env: this.getGbDeployEnv( this.settings.environment ),
+					config: this.getData( GB_DEPLOY_CONFIG_KEY ),
+					env: this.getData( GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
 				},
 			} );
 
@@ -303,7 +278,7 @@ class GbDeploy {
 
 	doCleanup() {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getGbDeployConfig();
+			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
 
 			let {
 				repoDest = './',
