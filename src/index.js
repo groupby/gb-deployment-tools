@@ -34,11 +34,16 @@ class GbDeploy {
 		this.builds = this.parseBuilds( builds );
 	}
 
+	/**
+	 * Wrapper around validatation, clone, build, migrate, and deployment processes.
+	 *
+	 * @return {Promise}
+	 */
 	run() {
 		return new Promise( async ( resolve, reject ) => {
 			try {
 				// Ensure that current project includes required config.
-				if ( !this.hasGbDeployData() ) {
+				if ( !this.validateData() ) {
 					throw new Error( 'Whoops, looks like this project is not set up for use with `GbDeploy`' );
 				}
 
@@ -79,33 +84,83 @@ class GbDeploy {
 		} );
 	}
 
+	/**
+	 * Ensure that the required data was provided at instantion time.
+	 *
+	 * @return {boolean}
+	 */
+	validateData() {
+		let vals = [
+			this.getData( GB_DEPLOY_BUILDS_KEY ),
+			this.getData( GB_DEPLOY_ENVS_KEY ),
+			this.getData( GB_DEPLOY_CONFIG_KEY ),
+		];
+
+		/// TODO: Seems brittle...
+		return vals.every( val => ( !!val && JSON.stringify( val ) !== '{}' ) );
+	}
+
+	/**
+	 * Ensures that current instance points at valid environment.
+	 *
+	 * @return {boolean}
+	 */
 	validateEnvironment() {
 		return Object.keys( this.getData( GB_DEPLOY_ENVS_KEY ) ).includes( this.settings.environment );
 	}
 
+	/**
+	 * Ensures that all builds provided at instantiation time are valid.
+	 *
+	 * @return {boolean}
+	 */
 	validateBuilds() {
 		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getData( GB_DEPLOY_BUILDS_KEY ) ).includes( build.name ) );
 	}
 
+	/**
+	 * Convert 'build strings' (ie. '<build>@<version>') to the correct format, enrich, and return.
+	 *
+	 * @param {Array<Object>} builds
+	 * @return {Array<Object>}
+	 */
 	parseBuilds( builds=[] ) {
-		let validBuilds = this.getData( GB_DEPLOY_BUILDS_KEY );
-
 		builds = Array.isArray( builds ) ? builds : [ builds ];
 
+		let validBuilds = this.getData( GB_DEPLOY_BUILDS_KEY );
+
 		return builds
+			// Split.
 			.map( build => build.split( '@' ) )
+			// Coerce to object.
 			.map( ( [ name, version ] ) => ( { name, version } ) )
+			// Set version if required.
 			.map( build => ( semver.valid( build.version ) ? build : { ...build, ...{ version: this.getTransientVersion() } } ) )
+			// Enrich with data provided by project.
 			.map( build => ( validBuilds[ build.name ] ? { ...validBuilds[ build.name ], ...build } : build ) )
+			// Resolve file names.
 			.map( build => ( { ...build, ...{ resolvedFiles: this.getResolvedFileNames( build ) } } ) );
 	}
 
+	/**
+	 * Get a 'transient' version identifier.
+	 *
+	 * This is used for cases where a given build does not include a semver-compliant version identifier.
+	 *
+	 * @return {string}
+	 */
 	getTransientVersion() {
 		let m = moment();
 
 		return `${m.format( 'YYYY-MM-DD' )}-${m.unix()}`;
 	}
 
+	/**
+	 * Given an object of 'build' data, extract the 'files', parse them, and generate an array of 'resolved' file names.
+	 *
+	 * @param {Object} build
+	 * @return {Array}
+	 */
 	getResolvedFileNames( build = {} ) {
 		if (
 			!build
@@ -124,10 +179,23 @@ class GbDeploy {
 			} );
 	}
 
+	/**
+	 * Return `pkg` instance property or fall back to empty object.
+	 *
+	 * @return {Object}
+	 */
 	getPkg() {
 		return this.pkg || {};
 	}
 
+	/**
+	 * Given a `key`, extract the corresponding info from the `pkg`.
+	 *
+	 * If the `key` does not exist, fall back to an empty object.
+	 *
+	 * @param {string} key
+	 * @return {Object}
+	 */
 	getData( key ) {
 		let data = this.getPkg()[ GB_DEPLOY_KEY ];
 
@@ -138,17 +206,11 @@ class GbDeploy {
 		return data[ key ] || {};
 	}
 
-	hasGbDeployData() {
-		let vals = [
-			this.getData( GB_DEPLOY_BUILDS_KEY ),
-			this.getData( GB_DEPLOY_ENVS_KEY ),
-			this.getData( GB_DEPLOY_CONFIG_KEY ),
-		];
-
-		/// TODO: Seems brittle...
-		return vals.every( val => ( !!val && JSON.stringify( val ) !== '{}' ) );
-	}
-
+	/**
+	 * Wrapper around the `clone` script.
+	 *
+	 * @return {Promise}
+	 */
 	doClone() {
 		return new Promise( ( resolve, reject ) => {
 			let f = fork( `${__dirname}/scripts/clone.js` );
@@ -173,6 +235,11 @@ class GbDeploy {
 		} );
 	}
 
+	/**
+	 * Wrapper around the `build` script.
+	 *
+	 * @return {Promise}
+	 */
 	doBuild() {
 		return new Promise( ( resolve, reject ) => {
 			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
@@ -205,6 +272,11 @@ class GbDeploy {
 		} );
 	}
 
+	/**
+	 * Wrapper around the `migrate` script.
+	 *
+	 * @return {Promise}
+	 */
 	doMigrate( builds=[] ) {
 		return new Promise( ( resolve, reject ) => {
 			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
@@ -250,6 +322,11 @@ class GbDeploy {
 		} );
 	}
 
+	/**
+	 * Wrapper around the `deploy` script.
+	 *
+	 * @return {Promise}
+	 */
 	doDeploy() {
 		return new Promise( ( resolve, reject ) => {
 			let f = fork( `${__dirname}/scripts/deploy.js` );
@@ -276,6 +353,11 @@ class GbDeploy {
 		} );
 	}
 
+	/**
+	 * Remove files/folders introduced as part of the clone, build, migrate, and/or deployment processes.
+	 *
+	 * @return {Promise}
+	 */
 	doCleanup() {
 		return new Promise( ( resolve, reject ) => {
 			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
@@ -302,7 +384,6 @@ class GbDeploy {
 		} );
 	}
 }
-
 
 // --------------------------------------------------
 // PUBLIC API
