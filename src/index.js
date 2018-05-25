@@ -10,6 +10,7 @@ const del = require( 'del' );
 const merge = require( 'deepmerge' );
 const moment = require( 'moment' );
 const semver = require( 'semver' );
+const spinner = require( 'cli-spinner' );
 
 // Project
 const pkg = require( `${process.cwd()}/package` );
@@ -281,7 +282,7 @@ class GbDeploy {
 
 			/// TODO: Ensure that each `build` object includes a `files` arr.
 			let paths = builds
-				.filter( build => !semver.valid( build.verison ) )
+				.filter( build => !semver.valid( build.version ) )
 				.map( build => {
 					return build.files.map( ( file, i ) => ( {
 						src: file.src,
