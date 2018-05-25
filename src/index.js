@@ -10,18 +10,16 @@ const del = require( 'del' );
 const merge = require( 'deepmerge' );
 const moment = require( 'moment' );
 const semver = require( 'semver' );
-const spinner = require( 'cli-spinner' );
+const simpleGit = require( 'simple-git' );
 
 // Project
+const { KEYS } = require( './data' );
 const utils = require( './utils' );
 
 // --------------------------------------------------
 // DECLARE VARS
 // --------------------------------------------------
-const GB_DEPLOY_KEY = 'gb-deploy';
-const GB_DEPLOY_CONFIG_KEY = 'config';
-const GB_DEPLOY_BUILDS_KEY = 'builds';
-const GB_DEPLOY_ENVS_KEY = 'environments';
+const git = simpleGit();
 
 // --------------------------------------------------
 // CORE
@@ -46,16 +44,21 @@ class GbDeploy {
 	run() {
 		return new Promise( async ( resolve, reject ) => {
 			try {
+				if ( !await this.validateRepo() ) {
+					throw new Error( 'Whoops, looks like this project has a dirty repo. Please commit or stash your changes before deploying' );
+				}
+
 				if ( !this.validateData() ) {
 					throw new Error( 'Whoops, looks like this project is not set up for use with `GbDeploy`' );
 				}
 
+
 				if ( !this.validateBuilds() ) {
-					throw new Error( `Must include one or more valid builds: <${Object.keys( this.getData( GB_DEPLOY_BUILDS_KEY ) ).join( '|' )}>` );
+					throw new Error( `Must include one or more valid builds: <${Object.keys( this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ) ).join( '|' )}>` );
 				}
 
 				if ( !this.validateEnvironment() ) {
-					throw new Error( `Must include a valid environment: <${Object.keys( this.getData( GB_DEPLOY_ENVS_KEY ) ).join( '|' )}>` );
+					throw new Error( `Must include a valid environment: <${Object.keys( this.getData( KEYS.GB_DEPLOY_ENVS_KEY ) ).join( '|' )}>` );
 				}
 
 				// Perform additional validation for production deployments.
@@ -87,15 +90,59 @@ class GbDeploy {
 	}
 
 	/**
+	 * Wrapper around all Git-related validation.
+	 *
+	 * @return {Promise<boolean>}
+	 */
+	async validateRepo() {
+		try {
+			await this.repoIsClean();
+
+			return true;
+		} catch ( err ) {
+			return false;
+		}
+	}
+
+	/**
+	 * Ensure that the consuming project's repo is clean.
+	 *
+	 * @return {Promise<boolean|Error>}
+	 */
+	repoIsClean() {
+		return new Promise( ( resolve, reject ) => {
+			git.status( ( err, data ) => {
+				if ( err ) {
+					reject( err );
+				}
+
+				let {
+					not_added,
+					modified,
+				} = data;
+
+				if (
+					!not_added.length
+					&& !modified.length
+				) {
+					resolve( true );
+				} else {
+					reject( false );
+				}
+			} );
+		} );
+	}
+
+	/**
 	 * Ensure that the required data was provided at instantion time.
 	 *
 	 * @return {boolean}
 	 */
 	validateData() {
 		let vals = [
-			this.getData( GB_DEPLOY_BUILDS_KEY ),
-			this.getData( GB_DEPLOY_ENVS_KEY ),
-			this.getData( GB_DEPLOY_CONFIG_KEY ),
+			this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ),
+			this.getData( KEYS.GB_DEPLOY_ENVS_KEY ),
+			this.getData( KEYS.GB_DEPLOY_CONFIG_KEY ),
 		];
 
 		/// TODO: Seems brittle...
@@ -108,7 +155,7 @@ class GbDeploy {
 	 * @return {boolean}
 	 */
 	validateEnvironment() {
-		return Object.keys( this.getData( GB_DEPLOY_ENVS_KEY ) ).includes( this.settings.environment );
+		return Object.keys( this.getData( KEYS.GB_DEPLOY_ENVS_KEY ) ).includes( this.settings.environment );
 	}
 
 	/**
@@ -117,7 +164,7 @@ class GbDeploy {
 	 * @return {boolean}
 	 */
 	validateBuilds() {
-		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getData( GB_DEPLOY_BUILDS_KEY ) ).includes( build.name ) );
+		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ) ).includes( build.name ) );
 	}
 
 	/**
@@ -129,7 +176,7 @@ class GbDeploy {
 	parseBuilds( builds=[] ) {
 		builds = Array.isArray( builds ) ? builds : [ builds ];
 
-		let validBuilds = this.getData( GB_DEPLOY_BUILDS_KEY );
+		let validBuilds = this.getData( KEYS.GB_DEPLOY_BUILDS_KEY );
 
 		return builds
 			// Split.
@@ -200,7 +247,7 @@ class GbDeploy {
 			f.send( {
 				action: 'CLONE',
 				payload: {
-					config: this.getData( GB_DEPLOY_CONFIG_KEY ),
+					config: this.getData( KEYS.GB_DEPLOY_CONFIG_KEY ),
 				},
 			} );
 
@@ -224,7 +271,7 @@ class GbDeploy {
 	 */
 	doBuild() {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
+			let config = this.getData( KEYS.GB_DEPLOY_CONFIG_KEY );
 
 			let { localBuildsPath = './' } = config;
 
@@ -235,7 +282,7 @@ class GbDeploy {
 			f.send( {
 				action: 'BUILD',
 				payload: {
-					env: this.getData( GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
+					env: this.getData( KEYS.GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
 				},
 			} );
 
@@ -259,7 +306,7 @@ class GbDeploy {
 	 */
 	doMigrate( builds=[] ) {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
+			let config = this.getData( KEYS.GB_DEPLOY_CONFIG_KEY );
 
 			let { repoDest = './', repoBuildsPath = './' } = config;
 
@@ -312,8 +359,8 @@ class GbDeploy {
 				action: 'DEPLOY',
 				payload: {
 					builds: this.builds,
-					config: this.getData( GB_DEPLOY_CONFIG_KEY ),
-					env: this.getData( GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
+					config: this.getData( KEYS.GB_DEPLOY_CONFIG_KEY ),
+					env: this.getData( KEYS.GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
 				},
 			} );
 
@@ -337,7 +384,7 @@ class GbDeploy {
 	 */
 	doCleanup() {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( GB_DEPLOY_CONFIG_KEY );
+			let config = this.getData( KEYS.GB_DEPLOY_CONFIG_KEY );
 
 			let { repoDest = './' } = config;
 
