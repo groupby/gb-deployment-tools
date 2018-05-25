@@ -13,7 +13,7 @@ const semver = require( 'semver' );
 const simpleGit = require( 'simple-git' );
 
 // Project
-const { KEYS } = require( './data' );
+const { KEYS, MESSAGES } = require( './data' );
 const utils = require( './utils' );
 
 // --------------------------------------------------
@@ -45,27 +45,26 @@ class GbDeploy {
 		return new Promise( async ( resolve, reject ) => {
 			try {
 				if ( !await this.validateRepo() ) {
-					throw new Error( 'Whoops, looks like this project has a dirty repo. Please commit or stash your changes before deploying' );
+					throw new Error( MESSAGES.ERROR.REPO_UNCLEAN );
 				}
 
 				if ( !this.validateData() ) {
-					throw new Error( 'Whoops, looks like this project is not set up for use with `GbDeploy`' );
+					throw new Error( MESSAGES.ERROR.INVALID_DATA );
 				}
 
-
-				if ( !this.validateBuilds() ) {
-					throw new Error( `Must include one or more valid builds: <${Object.keys( this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ) ).join( '|' )}>` );
+				if ( !this.validateBuilds()) {
+					throw new Error( `${MESSAGES.ERROR.INVALID_BUILDS}: <${Object.keys( this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ) ).join( '|' )}>` );
 				}
 
 				if ( !this.validateEnvironment() ) {
-					throw new Error( `Must include a valid environment: <${Object.keys( this.getData( KEYS.GB_DEPLOY_ENVS_KEY ) ).join( '|' )}>` );
+					throw new Error( `${MESSAGES.ERROR.INVALID_ENV}: <${Object.keys( this.getData( KEYS.GB_DEPLOY_ENVS_KEY ) ).join( '|' )}>` );
 				}
 
 				// Perform additional validation for production deployments.
 				if ( this.settings.environment === 'production' ) {
 					// Prevent 'feature' branches from building/deploying to production.
 					if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
-						throw new Error( 'When deploying to production, all builds must include a semver-compliant version identifier (ie. `<build>@<version>`)' );
+						throw new Error( MESSAGES.ERROR.MISSING_VERSION_PROD );
 					}
 				}
 
@@ -257,7 +256,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject( new Error( 'Failed to clone repository. Please ensure that the project contains valid `repoSrc` and `repoDest` data.' ) );
+						reject( new Error( MESSAGES.ERROR.FAILED_TO_CLONE ) );
 						break;
 				}
 			} );
@@ -292,7 +291,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject( new Error( 'Failed to build. Please ensure that the target environment includes a valid `buildScript`' ) );
+						reject( new Error( MESSAGES.ERROR.FAILED_TO_BUILD ) );
 						break;
 				}
 			} );
@@ -339,7 +338,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject( new Error( 'Failed to migrate files. Please ensure that all file references are valid.' ) );
+						reject( new Error( MESSAGES.ERROR.FAILED_TO_MIGRATE ) );
 						break;
 				}
 			} );
@@ -370,7 +369,7 @@ class GbDeploy {
 						resolve();
 						break;
 					default:
-						reject( new Error( 'Failed to deploy updates.' ) );
+						reject( new Error( MESSAGES.ERROR.FAILED_TO_DEPLOY ) );
 						break;
 				}
 			} );
@@ -391,7 +390,7 @@ class GbDeploy {
 			repoDest = utils.normalizeDir( repoDest );
 
 			if ( !repoDest ) {
-				reject( new Error( 'Failed to clean up. Unable to begin removal process.' ) );
+				reject( new Error( MESSAGES.ERROR.FAILED_TO_CLEAN ) );
 				return;
 			}
 
