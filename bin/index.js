@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 // --------------------------------------------------
 // IMPORT MODULES
 // --------------------------------------------------
@@ -6,7 +8,9 @@ const meow = require( 'meow' );
 const chalk = require( 'chalk' );
 
 // Project
+const { KEYS } = require( '../src/data' );
 const pkg = require( '../package' );
+const projectData = require( `${process.cwd()}/package` ); /// TODO: Account for possibility that CLI script is not running in project root.
 const GbDeploy = require( '../src' );
 
 // --------------------------------------------------
@@ -21,7 +25,6 @@ const { input, flags, showHelp } = meow( `
 	COMMANDS:
 		-h --help
 		-e --environment
-		-b --build
 `, {
 	flags: {
 		build: {
@@ -43,7 +46,11 @@ if ( flags.h ) {
 // --------------------------------------------------
 // INIT
 // --------------------------------------------------
-new GbDeploy( { builds: input, opts: flags } )
+new GbDeploy( {
+	builds: input,
+	opts: flags,
+	data: ( projectData[ KEYS.GB_DEPLOY_KEY ] || {} ),
+} )
 	.run()
 	.then( () => {
 		/// TODO: Handle success.

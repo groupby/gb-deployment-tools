@@ -13,7 +13,6 @@ const semver = require( 'semver' );
 const spinner = require( 'cli-spinner' );
 
 // Project
-const pkg = require( `${process.cwd()}/package` );
 const utils = require( './utils' );
 
 // --------------------------------------------------
@@ -28,8 +27,12 @@ const GB_DEPLOY_ENVS_KEY = 'environments';
 // CORE
 // --------------------------------------------------
 class GbDeploy {
-	constructor( { builds = [], opts = {} } = {} ) {
-		this.pkg = pkg || {};
+	constructor( {
+		builds = [],
+		opts = {},
+		data = {},
+	} = {} ) {
+		this.data = data || {};
 		this.settings = merge( {}, opts ); // Since we're not merging in any defaults, this is a clone of `opts`.
 		this.opts = opts;
 		this.builds = this.parseBuilds( builds );
@@ -174,16 +177,7 @@ class GbDeploy {
 	}
 
 	/**
-	 * Return `pkg` instance property or fall back to empty object.
-	 *
-	 * @return {Object}
-	 */
-	getPkg() {
-		return this.pkg || {};
-	}
-
-	/**
-	 * Given a `key`, extract the corresponding info from the `pkg`.
+	 * Given a `key`, extract the corresponding info.
 	 *
 	 * If the `key` does not exist, fall back to an empty object.
 	 *
@@ -191,13 +185,7 @@ class GbDeploy {
 	 * @return {Object}
 	 */
 	getData( key ) {
-		let data = this.getPkg()[ GB_DEPLOY_KEY ];
-
-		if ( !data || typeof data !== 'object' ) {
-			return {};
-		}
-
-		return data[ key ] || {};
+		return this.data[ key ] || {};
 	}
 
 	/**
