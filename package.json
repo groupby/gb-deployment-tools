@@ -22,6 +22,7 @@
     "simple-git": "^1.95.0"
   },
   "bin": {
-    "gb-deploy": "./bin/index.js"
+    "gb-deploy": "./bin/gb-deploy.js",
+    "gb-release": "./bin/gb-release.js"
   }
 }

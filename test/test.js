@@ -4,7 +4,7 @@ const assert = require( 'assert' );
 const { describe, it } = require( 'mocha' );
 
 // Project
-const GbDeploy = require( '../src' );
+const { GbDeploy } = require( '../src' );
 
 // DEFINE TESTS
 describe( 'gb-node-deploy', () => {

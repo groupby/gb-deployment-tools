@@ -11,30 +11,20 @@ const chalk = require( 'chalk' );
 const { KEYS } = require( '../src/data' );
 const pkg = require( '../package' );
 const projectData = require( `${process.cwd()}/package` ); /// TODO: Account for possibility that CLI script is not running in project root.
-const GbDeploy = require( '../src' );
+const { GbRelease } = require( '../src' );
 
 // --------------------------------------------------
 // VARS
 // --------------------------------------------------
 const { input, flags, showHelp } = meow( `
 	USAGE:
-		${pkg.name} exposes the following commands: ${Object.keys( pkg.bin ).join( ' ' )}.
-
-		Execute these commands directly from the command line, or via the 'scripts' field within a dependent project.
+		\`gb-release\` may be executed directly from the command line, or via the 'scripts' field within a dependent project.
 
 	COMMANDS:
 		-h --help
-		-e --environment
 `, {
 	flags: {
-		build: {
-			type: 'string',
-			alias: 'b',
-		},
-		environment: {
-			type: 'string',
-			alias: 'e',
-		},
+		/// TODO
 	},
 } );
 
@@ -46,14 +36,15 @@ if ( flags.h ) {
 // --------------------------------------------------
 // INIT
 // --------------------------------------------------
-new GbDeploy( {
-	builds: input,
+new GbRelease( {
+	releaseType: input[ 0 ],
 	opts: flags,
-	data: ( projectData[ KEYS.GB_DEPLOY_KEY ] || {} ),
+	data: ( projectData[ KEYS.GB_RELEASE_KEY ] || {} ),
 } )
 	.run()
-	.then( () => {
+	.then( ( data ) => {
 		/// TODO: Handle success.
+		console.log( data ); /// TEMP
 	} )
 	.catch( ( err ) => {
 		/// TODO: Handle error.

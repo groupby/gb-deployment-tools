@@ -4,6 +4,7 @@ module.exports = {
 		GB_DEPLOY_CONFIG_KEY: 'config',
 		GB_DEPLOY_BUILDS_KEY: 'builds',
 		GB_DEPLOY_ENVS_KEY: 'environments',
+		GB_RELEASE_KEY: 'gb-deploy', /// TODO: Update this, or consolidate with `GB_DEPLOY_KEY`?
 	},
 	MESSAGES: {
 		ERROR: {
@@ -12,6 +13,7 @@ module.exports = {
 			FAILED_TO_CLONE: 'Failed to clone repository. Please ensure that the project contains valid `repoSrc` and `repoDest` data.',
 			FAILED_TO_DEPLOY: 'Failed to deploy updates.',
 			FAILED_TO_MIGRATE: 'Failed to migrate files. Please ensure that all file references are valid.',
+			INVALID_RELEASE_TYPE: 'Whoops, the release type is invalid.',
 			INVALID_DATA: 'Whoops, looks like this project is not set up for use with `GbDeploy`',
 			INVALID_BUILDS: 'Must include one or more valid builds',
 			INVALID_ENV: 'Must include a valid environment',
