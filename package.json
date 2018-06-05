@@ -12,6 +12,7 @@
     "mocha": "^5.1.1"
   },
   "dependencies": {
+    "@octokit/rest": "^15.8.1",
     "chalk": "^2.4.1",
     "cp-file": "^6.0.0",
     "deepmerge": "^2.1.0",
