@@ -17,14 +17,26 @@ const utils = require( '../utils' );
 // --------------------------------------------------
 const git = simpleGit();
 
+const TYPES = {
+	deploy: {
+		identifier: 'deploy',
+		commitMsgPrefix: 'DEPLOY',
+	},
+	release: {
+		identifier: 'release',
+		commitMsgPrefix: 'RELEASE',
+	},
+};
+
 // --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
-doDeploy = ( data ) => {
+const doDeploy = ( data ) => {
 	let {
 		builds = [],
 		config = {},
 		env = {},
+		type = null,
 	} = data;
 
 	let {
@@ -52,11 +64,6 @@ doDeploy = ( data ) => {
 
 	let buildsDirContents = readdirSync( `${repoDest}/${repoBuildsPath}`, { encoding: 'utf-8' } );
 
-	// Ensure that 'manifest' file exists.
-	if ( !buildsDirContents.includes( manifest ) ) {
-		process.exit( 1 );
-	}
-
 	// Ensure that all files spec'd by current 'build' exist.
 	let matchedAllBuilds = builds
 		.map( build => build.resolvedFiles )
@@ -67,19 +74,32 @@ doDeploy = ( data ) => {
 		process.exit( 1 );
 	}
 
-	// Consume, update, and write 'manifest' data.
-	let manifestData = require( `${repoDest}/${repoBuildsPath}/${manifest}` );
+	// Ensure that deployment 'type' was provided.
+	if ( !type ) {
+		process.exit( 1 );
+	}
 
-	newManifestData = builds.reduce( ( o, build ) => {
-		return { ...o, ...formatBuildData( build ) }
-	}, manifestData );
+	// Perform 'deploy'-specific validation and updates.
+	if ( type === TYPES.deploy.identifier ) {
+		// Ensure that 'manifest' file exists.
+		if ( !buildsDirContents.includes( manifest ) ) {
+			process.exit( 1 );
+		}
 
-	/// TODO: Account for write failure.
-	writeFileSync(
-		`${repoDest}/${repoBuildsPath}/${manifest}`,
-		JSON.stringify( newManifestData, null, 2 ),
-		{ encoding: 'utf-8' }
-	);
+		// Consume, update, and write 'manifest' data.
+		let manifestData = require( `${repoDest}/${repoBuildsPath}/${manifest}` );
+
+		newManifestData = builds.reduce( ( o, build ) => {
+			return { ...o, ...formatBuildData( build ) }
+		}, manifestData );
+
+		/// TODO: Account for write failure.
+		writeFileSync(
+			`${repoDest}/${repoBuildsPath}/${manifest}`,
+			JSON.stringify( newManifestData, null, 2 ),
+			{ encoding: 'utf-8' }
+		);
+	}
 
 	// Add, commit, push updates to remote, and exit.
 	/// TODO: Refactor nested callbacks.
@@ -91,7 +111,13 @@ doDeploy = ( data ) => {
 
 		let buildStrings = builds.map( build => `${build.name}@${build.version}` );
 
-		git.commit( `[${env.name}] ${buildStrings.join( '; ')}`, ( err, data ) => {
+		// Gnar... fix it.
+		let msg = `${getMessagePrefix( type, type === TYPES.deploy.identifier ? env.name : null )}: ${buildStrings.join( '; ')}`
+
+		git.commit( msg, ( err, data ) => {
+			console.log( 'LOGGING OUT `data`' ); /// TEMP
+			console.log( data ); /// TEMP
+
 			if ( err ) {
 				process.exit( 1 );
 			}
@@ -114,7 +140,7 @@ doDeploy = ( data ) => {
  * @return {Object}
  */
 /// TODO: Refactor
-formatBuildData = ( build ) => {
+const formatBuildData = ( build ) => {
 	let {
 		resolvedFilePrefix = ''
 	} = build;
@@ -142,6 +168,19 @@ formatBuildData = ( build ) => {
 			...bundleData,
 		}
 	};
+}
+
+const getMessagePrefix = ( type, env ) => {
+	let data = TYPES[ type ];
+
+	// Gnar... fix it.
+	if ( data && env ) {
+		return `[${data.commitMsgPrefix}:${env}]`;
+	} else if ( data ) {
+		return `[${data.commitMsgPrefix}]`;
+	} else {
+		return '[]';
+	}
 }
 
 // --------------------------------------------------

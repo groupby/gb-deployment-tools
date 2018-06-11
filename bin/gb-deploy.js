@@ -10,7 +10,7 @@ const chalk = require( 'chalk' );
 // Project
 const { KEYS } = require( '../src/data' );
 const pkg = require( '../package' );
-const projectData = require( `${process.cwd()}/package` ); /// TODO: Account for possibility that CLI script is not running in project root.
+const clientPkg = require( `${process.cwd()}/package` ); /// TODO: Account for possibility that CLI script is not running in project root.
 const { GbDeploy } = require( '../src' );
 
 // --------------------------------------------------
@@ -43,7 +43,8 @@ if ( flags.h ) {
 new GbDeploy( {
 	builds: input,
 	opts: flags,
-	data: ( projectData[ KEYS.GB_DEPLOY_KEY ] || {} ),
+	data: ( clientPkg[ KEYS.GB_DEPLOY_KEY ] || {} ),
+	clientPkg,
 } )
 	.run()
 	.then( () => {
