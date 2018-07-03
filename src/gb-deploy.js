@@ -8,7 +8,7 @@ const path = require( 'path' );
 // Vendor
 const merge = require( 'deepmerge' );
 const semver = require( 'semver' );
-const simpleGit = require( 'simple-git' );
+const simpleGit = require( 'simple-git/promise' );
 
 // Project
 const { GbBase } = require( './gb-base' );
@@ -45,7 +45,14 @@ class GbDeploy extends GbBase {
 	run() {
 		return new Promise( async ( resolve, reject ) => {
 			try {
-				if ( !await this.validateRepo() ) {
+				// Check repo sync'd, clean, etc.
+				let statusData = await git.status();
+
+				if ( !utils.ensureRepoIsSynced( statusData ) ) {
+					throw new Error( MESSAGES.ERROR.REPO_OUT_OF_SYNC );
+				}
+
+				if ( !utils.ensureRepoIsClean( statusData ) ) {
 					throw new Error( MESSAGES.ERROR.REPO_UNCLEAN );
 				}
 
@@ -85,51 +92,6 @@ class GbDeploy extends GbBase {
 			} catch ( err ) {
 				reject( err );
 			}
-		} );
-	}
-
-	/**
-	 * Wrapper around all Git-related validation.
-	 *
-	 * @return {Promise<boolean>}
-	 */
-	async validateRepo() {
-		try {
-			await this.repoIsClean();
-
-			return true;
-		} catch ( err ) {
-			return false;
-		}
-	}
-
-	/**
-	 * Ensure that the consuming project's repo is clean.
-	 *
-	 * @return {Promise<boolean|Error>}
-	 */
-	/// TODO: Consolidate w/ utility function.
-	repoIsClean() {
-		return new Promise( ( resolve, reject ) => {
-			git.status( ( err, data ) => {
-				if ( err ) {
-					reject( err );
-				}
-
-				let {
-					not_added,
-					modified,
-				} = data;
-
-				if (
-					!not_added.length
-					&& !modified.length
-				) {
-					resolve( true );
-				} else {
-					reject( false );
-				}
-			} );
 		} );
 	}
 
