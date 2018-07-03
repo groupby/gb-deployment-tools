@@ -122,7 +122,7 @@ class GbRelease extends GbBase {
 				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_CLONE  ) );
 
 				// To migrate everything: generate builds strings; parse them; and pass the results to 'doMigrate'.
-				console.log( chalk.gray(  MESSAGES.LIFECYCLE.MIGRATE  ) );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_MIGRATE  ) );
 				let buildStrings = Object.keys( this.getData( 'builds' ) ).map( build => `${build}@${semver.inc( this.clientPkg.version, this.releaseType )}` );
 				let builds = this.parseBuildStrings( buildStrings );
 				await this.doMigrate( builds );
