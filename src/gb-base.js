@@ -224,9 +224,6 @@ class GbBase {
 				} )
 				.reduce( ( acc, arr ) => { return [ ...acc, ...arr ] }, [] );
 
-			console.log( 'LOGGING OUT `paths`' ); /// TEMP
-			console.log( paths ); /// TEMP
-
 			f.send( {
 				action: 'MIGRATE',
 				payload: {
