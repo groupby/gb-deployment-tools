@@ -191,7 +191,7 @@ class GbRelease extends GbBase {
 			}
 
 			return `${MESSAGES.RELEASE.PREFIX}:\n${commitStr}`;
-		} catch ( err ) => {
+		} catch ( err ) {
 			return MESSAGES.RELEASE.DEFAULT;
 		}
 	}
