@@ -3,7 +3,6 @@
 // --------------------------------------------------
 // Node
 const { readdirSync, writeFileSync } = require('fs');
-const { execSync } = require('child_process');
 const path = require('path');
 
 // Vendor
@@ -31,103 +30,6 @@ const TYPES = {
 // --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
-const doCommit = (data) => {
-	const {
-		builds = [],
-		config = {},
-		env = {},
-		type = null,
-	} = data;
-
-	let {
-		repoSrc = '',
-		repoDest = '',
-		repoBuildsPath = './',
-	} = config;
-
-	const {
-		manifest,
-	} = env;
-
-	if (
-		!repoSrc
-		|| !repoDest
-		|| !repoBuildsPath
-		|| !manifest
-		|| typeof manifest !== 'string'
-	) {
-		process.exit(1);
-	}
-
-	// Prepend `repoDest` with current working directory.
-	repoDest = `${process.cwd()}/${repoDest}`;
-
-	const buildsDirContents = readdirSync(`${repoDest}/${repoBuildsPath}`, { encoding: 'utf-8' });
-
-	// Ensure that all files spec'd by current 'build' exist.
-	const matchedAllBuilds = builds
-		.map(build => build.resolvedFiles)
-		.reduce((acc, arr) => [...acc, ...arr], [])
-		.every(filename => buildsDirContents.includes(filename));
-
-	if (!matchedAllBuilds) {
-		process.exit(1);
-	}
-
-	// Ensure that deployment 'type' was provided.
-	if (!type) {
-		process.exit(1);
-	}
-
-	// Perform 'deploy'-specific validation and updates.
-	if (type === TYPES.deploy.identifier) {
-		// Ensure that 'manifest' file exists.
-		if (!buildsDirContents.includes(manifest)) {
-			process.exit(1);
-		}
-
-		// Consume, update, and write 'manifest' data.
-		const manifestData = require(`${repoDest}/${repoBuildsPath}/${manifest}`);
-
-		newManifestData = builds.reduce((o, build) => ({ ...o, ...formatBuildData(build) }), manifestData);
-
-		// / TODO: Account for write failure.
-		writeFileSync(
-			`${repoDest}/${repoBuildsPath}/${manifest}`,
-			JSON.stringify(newManifestData, null, 2),
-			{ encoding: 'utf-8' },
-		);
-	}
-
-	// Add, commit, push updates to remote, and exit.
-	// / TODO: Refactor nested callbacks.
-	git.cwd(repoDest);
-	git.add('./', (err, data) => {
-		if (err) {
-			process.exit(1);
-		}
-
-		const buildStrings = builds.map(build => `${build.name}@${build.version}`);
-
-		// Gnar... fix it.
-		const msg = `${getMessagePrefix(type, type === TYPES.deploy.identifier ? env.name : null)}: ${buildStrings.join('; ')}`;
-
-		git.commit(msg, (err, data) => {
-			if (err) {
-				process.exit(1);
-			}
-
-			git.push('origin', 'master', (err, data) => {
-				if (err) {
-					process.exit(1);
-				}
-
-				process.exit(0);
-			});
-		});
-	});
-};
-
 /**
  * Format a given 'build' object for insertion into a 'manifest' file.
  *
@@ -174,6 +76,102 @@ const getMessagePrefix = (type, env) => {
 	return '[]';
 };
 
+const doCommit = (data) => {
+	const {
+		builds = [],
+		config = {},
+		env = {},
+		type = null,
+	} = data;
+
+	const {
+		repoSrc = '',
+		repoDest = '',
+		repoBuildsPath = './',
+	} = config;
+
+	const {
+		manifest,
+	} = env;
+
+	if (
+		!repoSrc
+		|| !repoDest
+		|| !repoBuildsPath
+		|| !manifest
+		|| typeof manifest !== 'string'
+	) {
+		process.exit(1);
+	}
+
+	// Prepend `repoDest` with current working directory.
+	const dest = `${process.cwd()}/${repoDest}`;
+
+	const buildsDirContents = readdirSync(`${dest}/${repoBuildsPath}`, { encoding: 'utf-8' });
+
+	// Ensure that all files spec'd by current 'build' exist.
+	const matchedAllBuilds = builds
+		.map(build => build.resolvedFiles)
+		.reduce((acc, arr) => [...acc, ...arr], [])
+		.every(filename => buildsDirContents.includes(filename));
+
+	if (!matchedAllBuilds) {
+		process.exit(1);
+	}
+
+	// Ensure that deployment 'type' was provided.
+	if (!type) {
+		process.exit(1);
+	}
+
+	// Perform 'deploy'-specific validation and updates.
+	if (type === TYPES.deploy.identifier) {
+		// Ensure that 'manifest' file exists.
+		if (!buildsDirContents.includes(manifest)) {
+			process.exit(1);
+		}
+
+		// Consume, update, and write 'manifest' data.
+		const manifestData = require(`${dest}/${repoBuildsPath}/${manifest}`);
+		const newManifestData = builds.reduce((o, build) => ({ ...o, ...formatBuildData(build) }), manifestData);
+
+		// / TODO: Account for write failure.
+		writeFileSync(
+			`${dest}/${repoBuildsPath}/${manifest}`,
+			JSON.stringify(newManifestData, null, 2),
+			{ encoding: 'utf-8' },
+		);
+	}
+
+	// Add, commit, push updates to remote, and exit.
+	// / TODO: Refactor nested callbacks.
+	git.cwd(dest);
+	git.add('./', (err) => {
+		if (err) {
+			process.exit(1);
+		}
+
+		const buildStrings = builds.map(build => `${build.name}@${build.version}`);
+
+		// Gnar... fix it.
+		const msg = `${getMessagePrefix(type, type === TYPES.deploy.identifier ? env.name : null)}: ${buildStrings.join('; ')}`;
+
+		git.commit(msg, (err) => {
+			if (err) {
+				process.exit(1);
+			}
+
+			git.push('origin', 'master', (err) => {
+				if (err) {
+					process.exit(1);
+				}
+
+				process.exit(0);
+			});
+		});
+	});
+};
+
 // --------------------------------------------------
 // INIT
 // --------------------------------------------------
@@ -183,7 +181,6 @@ process.on('message', (data = {}) => {
 		doCommit(data.payload);
 		break;
 	default:
-		console.log(`FAILED TO MATCH ACTION: ${data.action}`);
 		process.exit(1);
 		break;
 	}

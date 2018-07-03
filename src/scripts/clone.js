@@ -1,9 +1,6 @@
 // --------------------------------------------------
 // IMPORT MODULES
 // --------------------------------------------------
-// Node
-const { exec, execSync } = require('child_process');
-
 // Vendor
 const simpleGit = require('simple-git');
 
@@ -32,7 +29,7 @@ const doClone = (data) => {
 		process.exit(1);
 	}
 
-	git.clone(repoSrc, repoDest, [], (err, data) => {
+	git.clone(repoSrc, repoDest, [], (err) => {
 		if (err) {
 			process.exit(1);
 		} else {
@@ -50,7 +47,6 @@ process.on('message', (data = {}) => {
 		doClone(data.payload);
 		break;
 	default:
-		console.log(`FAILED TO MATCH ACTION: ${data.action}`);
 		process.exit(1);
 		break;
 	}

@@ -1,10 +1,6 @@
 // --------------------------------------------------
 // IMPORT MODULES
 // --------------------------------------------------
-// Node
-const { exec, execSync } = require('child_process');
-const path = require('path');
-
 // Vendor
 const cpFile = require('cp-file');
 
@@ -30,7 +26,7 @@ const doMigrate = (data = {}) => {
 		.then(() => {
 			process.exit(0);
 		})
-		.catch((err) => {
+		.catch(() => {
 			process.exit(1);
 		});
 };
@@ -44,7 +40,6 @@ process.on('message', (data = {}) => {
 		doMigrate(data.payload);
 		break;
 	default:
-		console.log(`FAILED TO MATCH ACTION: ${data.action}`);
 		process.exit(1);
 		break;
 	}

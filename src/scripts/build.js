@@ -25,7 +25,6 @@ process.on('message', (data = {}) => {
 		doBuild(data.payload);
 		break;
 	default:
-		console.log(`FAILED TO MATCH ACTION: ${data.action}`);
 		process.exit(1);
 		break;
 	}
