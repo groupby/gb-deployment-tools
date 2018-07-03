@@ -20,6 +20,8 @@ class GbBase {
 	parseBuildStrings( builds=[] ) {
 		builds = Array.isArray( builds ) ? builds : [ builds ];
 
+		const defaults = { files: [] };
+
 		let validBuilds = this.getData( KEYS.BUILDS );
 
 		return builds
@@ -29,6 +31,8 @@ class GbBase {
 			.map( ( [ name, version ] ) => ( { name, version } ) )
 			// Set version if required.
 			.map( build => ( semver.valid( build.version ) ? build : { ...build, ...{ version: this.getTransientVersion() } } ) )
+			// Merge with defaults.
+			.map( build => ( { ...defaults, ...build } ) )
 			// Enrich with data provided by project.
 			.map( build => ( validBuilds[ build.name ] ? { ...validBuilds[ build.name ], ...build } : build ) )
 			// Resolve file names.
@@ -214,7 +218,6 @@ class GbBase {
 
 			let f = fork( `${__dirname}/scripts/migrate.js` );
 
-			/// TODO: Ensure that each `build` object includes a `files` arr.
 			let paths = builds
 				.map( build => {
 					return build.files.map( ( file, i ) => ( {

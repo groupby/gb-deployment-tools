@@ -10,7 +10,7 @@ const chalk = require( 'chalk' );
 // Project
 const { KEYS } = require( '../src/data' );
 const pkg = require( '../package' );
-const clientPkg = require( `${process.cwd()}/package` ); /// TODO: Account for possibility that CLI script is not running in project root.
+const clientPkg = require( `${process.cwd()}/package` );
 const { GbRelease } = require( '../src' );
 
 // --------------------------------------------------
@@ -44,10 +44,8 @@ new GbRelease( {
 } )
 	.run()
 	.then( ( data ) => {
-		/// TODO: Handle success.
 		console.log( data ); /// TEMP
 	} )
 	.catch( ( err ) => {
-		/// TODO: Handle error.
 		console.log( chalk.red( err && err.message ? err.message : err ) );
 	} );

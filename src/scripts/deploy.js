@@ -115,9 +115,6 @@ const doDeploy = ( data ) => {
 		let msg = `${getMessagePrefix( type, type === TYPES.deploy.identifier ? env.name : null )}: ${buildStrings.join( '; ')}`
 
 		git.commit( msg, ( err, data ) => {
-			console.log( 'LOGGING OUT `data`' ); /// TEMP
-			console.log( data ); /// TEMP
-
 			if ( err ) {
 				process.exit( 1 );
 			}
