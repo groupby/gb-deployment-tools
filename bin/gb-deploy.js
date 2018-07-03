@@ -5,13 +5,10 @@
 // --------------------------------------------------
 // Vendor
 const meow = require( 'meow' );
-const chalk = require( 'chalk' );
 
 // Project
-const { KEYS } = require( '../src/data' );
-const pkg = require( '../package' );
 const clientPkg = require( `${process.cwd()}/package` );
-const { GbDeploy } = require( '../src' );
+const { GbDeploy, utils, DATA } = require( '../src' );
 
 // --------------------------------------------------
 // VARS
@@ -43,13 +40,13 @@ if ( flags.h ) {
 new GbDeploy( {
 	builds: input,
 	opts: flags,
-	data: ( clientPkg[ KEYS.MAIN ] || {} ),
+	data: ( clientPkg[ DATA.KEYS.MAIN ] || {} ),
 	clientPkg,
 } )
 	.run()
 	.then( ( data ) => {
-		console.log( data );
+		utils.log( data );
 	} )
 	.catch( ( err ) => {
-		console.log( chalk.red( err && err.message ? err.message : err ) );
+		utils.log( err && err.message ? err.message : err, { color: 'red' } );
 	} );
