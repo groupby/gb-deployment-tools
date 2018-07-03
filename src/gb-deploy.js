@@ -80,10 +80,9 @@ class GbDeploy extends GbBase {
 				await this.doDeploy( { builds: this.builds, type: 'deploy' } );
 				await this.doCleanup();
 
-				resolve( true ); /// TODO: Determine 'success' message.
+				resolve( MESSAGES.DEPLOY.SUCCESS );
 				return;
 			} catch ( err ) {
-				/// TODO: Ensure clean up.
 				reject( err );
 			}
 		} );

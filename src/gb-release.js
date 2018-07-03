@@ -91,11 +91,9 @@ class GbRelease extends GbBase {
 				await git.push( 'origin', archiveBranch );
 
 				// Spin off new development branch from production.
-				console.log( 'PRE BRANCH RESET' );
 				await git.checkout( BRANCHES.DEVELOPMENT );
 				await git.reset( [ '--hard', `origin/${BRANCHES.PRODUCTION}` ] );
 				await git.push( [ '-u', 'origin', BRANCHES.DEVELOPMENT, '-f' ] );
-				console.log( 'POST BRANCH RESET' );
 
 				// Refresh PRs.
 				await this.updatePrs();
@@ -111,16 +109,15 @@ class GbRelease extends GbBase {
 				let builds = this.parseBuildStrings( buildStrings );
 				await this.doMigrate( builds );
 
-				// Commit.
+				// Commit, clean up, and restore production branch.
 				await this.doDeploy( { builds, type: 'release' } );
+				await this.doCleanup();
+				await git.checkout( BRANCHES.PRODUCTION );
 
-				// Clean.
-			 	this.doCleanup();
-
-				// Restore production branch.
-				execSync( 'git checkout master' ); /// TEMP
+				resolve( MESSAGES.RELEASE.SUCCESS );
+				return;
 			} catch ( err ) {
-				reject( err ) ;
+				reject( err );
 			}
 		} );
 	}
