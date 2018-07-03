@@ -12,7 +12,7 @@ const simpleGit = require( 'simple-git' );
 
 // Project
 const { GbBase } = require( './gb-base' );
-const { KEYS, MESSAGES } = require( './data' );
+const { KEYS, MESSAGES, ENVS } = require( './data' );
 const utils = require( './utils' );
 
 // --------------------------------------------------
@@ -62,7 +62,7 @@ class GbDeploy extends GbBase {
 				}
 
 				// Perform additional validation for production deployments.
-				if ( this.settings.environment === 'production' ) {
+				if ( this.settings.environment === ENVS.PRODUCTION ) {
 					// Prevent 'feature' branches from building/deploying to production.
 					if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
 						throw new Error( MESSAGES.ERROR.MISSING_VERSION_PROD );

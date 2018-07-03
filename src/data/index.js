@@ -41,4 +41,7 @@ module.exports = {
 		PRODUCTION: 'master',
 		DEVELOPMENT: 'develop',
 	},
+	ENVS: {
+		PRODUCTION: 'production',
+	},
 };

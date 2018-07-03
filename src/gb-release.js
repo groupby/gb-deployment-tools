@@ -12,7 +12,7 @@ const simpleGit = require( 'simple-git/promise' );
 
 // Project
 const { GbBase } = require( './gb-base' );
-const { KEYS, MESSAGES, RELEASE_TYPES, BRANCHES } = require( './data' );
+const { KEYS, MESSAGES, RELEASE_TYPES, BRANCHES, ENVS } = require( './data' );
 const utils = require( './utils' );
 
 // --------------------------------------------------
@@ -37,7 +37,7 @@ class GbRelease extends GbBase {
 		this.clientPkg = clientPkg;
 
 		// NOTE: Force script to run in 'production' env.
-		this.settings = merge( opts, { environment: 'production' } );
+		this.settings = merge( opts, { environment: ENVS.PRODUCTION } );
 
 		this.opts = opts;
 		this.releaseType = releaseType;
