@@ -31,7 +31,7 @@ const TYPES = {
 // --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
-const doDeploy = ( data ) => {
+const doCommit = ( data ) => {
 	let {
 		builds = [],
 		config = {},
@@ -186,7 +186,7 @@ const getMessagePrefix = ( type, env ) => {
 process.on( 'message', ( data = {} ) => {
 	switch ( data.action ) {
 		case 'DEPLOY':
-			doDeploy( data.payload );
+			doCommit( data.payload );
 			break;
 		default:
 			console.log( `FAILED TO MATCH ACTION: ${data.action}` );

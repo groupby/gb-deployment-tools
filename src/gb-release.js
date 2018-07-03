@@ -114,7 +114,7 @@ class GbRelease extends GbBase {
 				await this.doMigrate( builds );
 
 				// Commit, clean up, and restore production branch.
-				await this.doDeploy( { builds, type: 'release' } );
+				await this.doCommit( { builds, type: 'release' } );
 				await this.doCleanup();
 				await git.checkout( BRANCHES.PRODUCTION );
 

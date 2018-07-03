@@ -170,16 +170,16 @@ class GbBase {
 	}
 
 	/**
-	 * Wrapper around the `deploy` script.
+	 * Wrapper around the `commit` script.
 	 *
 	 * @return {Promise}
 	 */
-	doDeploy( data = {} ) {
+	doCommit( data = {} ) {
 		return new Promise( ( resolve, reject ) => {
-			let f = fork( `${__dirname}/scripts/deploy.js` );
+			let f = fork( `${__dirname}/scripts/commit.js` );
 
 			f.send( {
-				action: 'DEPLOY',
+				action: 'COMMIT',
 				payload: {
 					...{
 						config: this.getData( KEYS.CONFIG ),

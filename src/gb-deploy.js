@@ -84,7 +84,7 @@ class GbDeploy extends GbBase {
 					await this.doMigrate( this.builds.filter( build => !semver.valid( build.version ) ) );
 				}
 
-				await this.doDeploy( { builds: this.builds, type: 'deploy' } );
+				await this.doCommit( { builds: this.builds, type: 'deploy' } );
 				await this.doCleanup();
 
 				resolve( MESSAGES.DEPLOY.SUCCESS );
