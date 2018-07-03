@@ -14,10 +14,10 @@ const git = simpleGit();
 // --------------------------------------------------
 const doClone = (data = {}) => {
 	try {
-		git.clone(data.config.repoSrc, data.config.repoDest, [] )
-			.then( () => process.exit(0) )
-			.catch( () => process.exit(1) );
-	} catch ( err ) {
+		git.clone(data.config.repoSrc, data.config.repoDest, [])
+			.then(() => process.exit(0))
+			.catch(() => process.exit(1));
+	} catch (err) {
 		process.exit(1);
 	}
 };

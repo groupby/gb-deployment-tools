@@ -64,7 +64,7 @@ const formatBuildData = (build = {}) => {
 	};
 };
 
-/// TODO: Move to `utils`.
+// / TODO: Move to `utils`.
 const getMessagePrefix = (type, env) => {
 	const data = TYPES[type] || {};
 
@@ -140,16 +140,16 @@ const doCommit = (data) => {
 
 	// Add, commit, push updates to remote, and exit.
 	git.cwd(dest)
-		.then( () => git.add('./') )
-		.then( () => {
-			/// TODO: Pull logic out into dedicated functions.
+		.then(() => git.add('./'))
+		.then(() => {
+			// / TODO: Pull logic out into dedicated functions.
 			const buildStrings = builds.map(build => `${build.name}@${build.version}`);
 			const msg = `${getMessagePrefix(type, type === TYPES.deploy.identifier ? env.name : null)}: ${buildStrings.join('; ')}`;
-			return git.commit( msg );
-		} )
-		.then( () => git.push( 'origin', 'master' ) )
-		.then( () => process.exit( 0 ) )
-		.catch( () => process.exit( 1 ) );
+			return git.commit(msg);
+		})
+		.then(() => git.push('origin', 'master'))
+		.then(() => process.exit(0))
+		.catch(() => process.exit(1));
 };
 
 // --------------------------------------------------
