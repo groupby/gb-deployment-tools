@@ -6,7 +6,7 @@ const { readdirSync, writeFileSync } = require('fs');
 const path = require('path');
 
 // Vendor
-const simpleGit = require('simple-git');
+const simpleGit = require('simple-git/promise');
 
 // Project
 const utils = require('../utils');
@@ -64,16 +64,16 @@ const formatBuildData = (build = {}) => {
 	};
 };
 
+/// TODO: Move to `utils`.
 const getMessagePrefix = (type, env) => {
-	const data = TYPES[type];
+	const data = TYPES[type] || {};
 
-	// Gnar... fix it.
-	if (data && env) {
-		return `[${data.commitMsgPrefix}:${env}]`;
-	} if (data) {
-		return `[${data.commitMsgPrefix}]`;
-	}
-	return '[]';
+	let msg = '';
+
+	msg += data.commitMsgPrefix ? `[${data.commitMsgPrefix}]` : '';
+	msg += env ? `[${env}]` : '';
+
+	return msg;
 };
 
 const doCommit = (data) => {
@@ -99,6 +99,7 @@ const doCommit = (data) => {
 		|| !repoDest
 		|| !repoBuildsPath
 		|| !manifest
+		|| !type
 		|| typeof manifest !== 'string'
 	) {
 		process.exit(1);
@@ -119,14 +120,8 @@ const doCommit = (data) => {
 		process.exit(1);
 	}
 
-	// Ensure that deployment 'type' was provided.
-	if (!type) {
-		process.exit(1);
-	}
-
 	// Perform 'deploy'-specific validation and updates.
 	if (type === TYPES.deploy.identifier) {
-		// Ensure that 'manifest' file exists.
 		if (!buildsDirContents.includes(manifest)) {
 			process.exit(1);
 		}
@@ -144,32 +139,17 @@ const doCommit = (data) => {
 	}
 
 	// Add, commit, push updates to remote, and exit.
-	// / TODO: Refactor nested callbacks.
-	git.cwd(dest);
-	git.add('./', (err) => {
-		if (err) {
-			process.exit(1);
-		}
-
-		const buildStrings = builds.map(build => `${build.name}@${build.version}`);
-
-		// Gnar... fix it.
-		const msg = `${getMessagePrefix(type, type === TYPES.deploy.identifier ? env.name : null)}: ${buildStrings.join('; ')}`;
-
-		git.commit(msg, (err) => {
-			if (err) {
-				process.exit(1);
-			}
-
-			git.push('origin', 'master', (err) => {
-				if (err) {
-					process.exit(1);
-				}
-
-				process.exit(0);
-			});
-		});
-	});
+	git.cwd(dest)
+		.then( () => git.add('./') )
+		.then( () => {
+			/// TODO: Pull logic out into dedicated functions.
+			const buildStrings = builds.map(build => `${build.name}@${build.version}`);
+			const msg = `${getMessagePrefix(type, type === TYPES.deploy.identifier ? env.name : null)}: ${buildStrings.join('; ')}`;
+			return git.commit( msg );
+		} )
+		.then( () => git.push( 'origin', 'master' ) )
+		.then( () => process.exit( 0 ) )
+		.catch( () => process.exit( 1 ) );
 };
 
 // --------------------------------------------------
