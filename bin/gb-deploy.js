@@ -47,7 +47,8 @@ new GbDeploy( {
 	clientPkg,
 } )
 	.run()
-	.then( () => {
+	.then( ( data ) => {
+		console.log( data );
 	} )
 	.catch( ( err ) => {
 		console.log( chalk.red( err && err.message ? err.message : err ) );

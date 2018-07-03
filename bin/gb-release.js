@@ -44,7 +44,7 @@ new GbRelease( {
 } )
 	.run()
 	.then( ( data ) => {
-		console.log( data ); /// TEMP
+		console.log( data );
 	} )
 	.catch( ( err ) => {
 		console.log( chalk.red( err && err.message ? err.message : err ) );
