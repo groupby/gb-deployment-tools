@@ -6,6 +6,7 @@ const { fork } = require( 'child_process' );
 const path = require( 'path' );
 
 // Vendor
+const chalk = require( 'chalk' );
 const merge = require( 'deepmerge' );
 const semver = require( 'semver' );
 const simpleGit = require( 'simple-git/promise' );
@@ -76,28 +77,28 @@ class GbDeploy extends GbBase {
 					}
 				}
 
-				console.log( MESSAGES.LIFECYCLE.PRE_CLONE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_CLONE  ) );
 				await this.doClone();
-				console.log( MESSAGES.LIFECYCLE.POST_CLONE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_CLONE  ) );
 
 				// If not deploying to production, compile and migrate any builds which do not include a valid version identifier.
 				if ( !this.builds.every( build => semver.valid( build.version ) ) ) {
-					console.log( MESSAGES.LIFECYCLE.PRE_BUILD );
+					console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_BUILD  ) );
 					await this.doBuild();
-					console.log( MESSAGES.LIFECYCLE.POST_BUILD );
+					console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_BUILD  ) );
 
-					console.log( MESSAGES.LIFECYCLE.PRE_MIGRATE );
+					console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_MIGRATE  ) );
 					await this.doMigrate( this.builds.filter( build => !semver.valid( build.version ) ) );
-					console.log( MESSAGES.LIFECYCLE.POST_MIGRATE );
+					console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_MIGRATE  ) );
 				}
 
-				console.log( MESSAGES.LIFECYCLE.PRE_COMMIT );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_COMMIT  ) );
 				await this.doCommit( { builds: this.builds, type: 'deploy' } );
-				console.log( MESSAGES.LIFECYCLE.POST_COMMIT );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_COMMIT  ) );
 
-				console.log( MESSAGES.LIFECYCLE.PRE_CLEAN );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_CLEAN  ) );
 				await this.doCleanup();
-				console.log( MESSAGES.LIFECYCLE.POST_CLEAN );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_CLEAN  ) );
 
 				resolve( MESSAGES.DEPLOY.SUCCESS );
 				return;

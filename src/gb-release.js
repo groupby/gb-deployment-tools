@@ -5,6 +5,7 @@
 const { execSync } = require( 'child_process' );
 
 // Vendor
+const chalk = require( 'chalk' );
 const merge = require( 'deepmerge' );
 const octokit = require( '@octokit/rest' );
 const semver = require( 'semver' );
@@ -87,50 +88,58 @@ class GbRelease extends GbBase {
 				}
 
 				// Bump version, commit, tag, and push.
-				console.log( MESSAGES.LIFECYCLE.PRE_RELEASE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_RELEASE  ) );
 				await this.doRelease();
-				console.log( MESSAGES.LIFECYCLE.POST_RELEASE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_RELEASE  ) );
 
 				// Archive current state of development branch.
+				console.log( chalk.gray(  'Starting branch archive.'  ) ); /// TEMP
 				let archiveBranch = `${BRANCHES.DEVELOPMENT}-${this.getTransientVersion()}`;
 				await git.checkoutBranch( archiveBranch, `origin/${BRANCHES.DEVELOPMENT}` );
 				await git.push( 'origin', archiveBranch );
+				console.log( chalk.gray(  'Completed branch archive.'  ) ); /// TEMP
 
 				// Spin off new development branch from production.
+				console.log( chalk.gray(  'Starting branch refresh.'  ) ); /// TEMP
 				await git.checkout( BRANCHES.DEVELOPMENT );
 				await git.reset( [ '--hard', `origin/${BRANCHES.PRODUCTION}` ] );
 				await git.push( [ '-u', 'origin', BRANCHES.DEVELOPMENT, '-f' ] );
+				console.log( chalk.gray(  'Completed branch refresh.'  ) ); /// TEMP
 
 				// Refresh PRs.
+				console.log( chalk.gray(  'Starting PR update.'  ) ); /// TEMP
 				await this.updatePrs();
+				console.log( chalk.gray(  'Completed PR update.'  ) ); /// TEMP
 
 				// Build.
-				console.log( MESSAGES.LIFECYCLE.PRE_BUILD );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_BUILD  ) );
 				await this.doBuild();
-				console.log( MESSAGES.LIFECYCLE.POST_BUILD );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_BUILD  ) );
 
 				// Clone.
-				console.log( MESSAGES.LIFECYCLE.PRE_CLONE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_CLONE  ) );
 				await this.doClone();
-				console.log( MESSAGES.LIFECYCLE.POST_CLONE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_CLONE  ) );
 
 				// To migrate everything: generate builds strings; parse them; and pass the results to 'doMigrate'.
-				console.log( MESSAGES.LIFECYCLE.MIGRATE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.MIGRATE  ) );
 				let buildStrings = Object.keys( this.getData( 'builds' ) ).map( build => `${build}@${semver.inc( this.clientPkg.version, this.releaseType )}` );
 				let builds = this.parseBuildStrings( buildStrings );
 				await this.doMigrate( builds );
-				console.log( MESSAGES.LIFECYCLE.POST_MIGRATE );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_MIGRATE  ) );
 
 				// Commit, clean up, and restore production branch.
-				console.log( MESSAGES.LIFECYCLE.PRE_COMMIT );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_COMMIT  ) );
 				await this.doCommit( { builds, type: 'release' } );
-				console.log( MESSAGES.LIFECYCLE.POST_COMMIT );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_COMMIT  ) );
 
-				console.log( MESSAGES.LIFECYCLE.PRE_CLEAN );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.PRE_CLEAN  ) );
 				await this.doCleanup();
-				console.log( MESSAGES.LIFECYCLE.POST_CLEAN );
+				console.log( chalk.gray(  MESSAGES.LIFECYCLE.POST_CLEAN  ) );
 
+				console.log( chalk.gray(  'Starting branch reset.'  ) ); /// TEMP
 				await git.checkout( BRANCHES.PRODUCTION );
+				console.log( chalk.gray(  'Completed branch reset.'  ) ); /// TEMP
 
 				resolve( MESSAGES.RELEASE.SUCCESS );
 				return;
