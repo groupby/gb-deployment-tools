@@ -2,7 +2,7 @@
 // IMPORT MODULES
 // --------------------------------------------------
 // Vendor
-const simpleGit = require('simple-git');
+const simpleGit = require('simple-git/promise');
 
 // --------------------------------------------------
 // DECLARE VARS
@@ -12,30 +12,14 @@ const git = simpleGit();
 // --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
-const doClone = (data) => {
-	const {
-		config = {},
-	} = data;
-
-	const {
-		repoSrc = '',
-		repoDest = '',
-	} = config;
-
-	if (
-		!repoSrc
-		|| !repoDest
-	) {
+const doClone = (data = {}) => {
+	try {
+		git.clone(data.config.repoSrc, data.config.repoDest, [] )
+			.then( () => process.exit(0) )
+			.catch( () => process.exit(1) );
+	} catch ( err ) {
 		process.exit(1);
 	}
-
-	git.clone(repoSrc, repoDest, [], (err) => {
-		if (err) {
-			process.exit(1);
-		} else {
-			process.exit(0);
-		}
-	});
 };
 
 // --------------------------------------------------
