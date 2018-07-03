@@ -184,7 +184,7 @@ const getMessagePrefix = ( type, env ) => {
 // --------------------------------------------------
 process.on( 'message', ( data = {} ) => {
 	switch ( data.action ) {
-		case 'DEPLOY':
+		case 'COMMIT':
 			doCommit( data.payload );
 			break;
 		default:

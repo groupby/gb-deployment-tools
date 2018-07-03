@@ -195,7 +195,7 @@ class GbBase {
 						resolve();
 						break;
 					default:
-						reject( new Error( MESSAGES.ERROR.FAILED_TO_DEPLOY ) );
+						reject( new Error( MESSAGES.ERROR.FAILED_TO_COMMIT ) );
 						break;
 				}
 			} );
