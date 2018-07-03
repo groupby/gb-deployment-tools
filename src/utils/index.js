@@ -1,4 +1,10 @@
 // --------------------------------------------------
+// IMPORT MODULES
+// --------------------------------------------------
+// Vendor
+const chalk = require('chalk');
+
+// --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
 const normalizeDir = (str = '') => {
@@ -45,11 +51,16 @@ const ensureRepoIsClean = (statusData = {}) => {
 	return true;
 };
 
+const log = (msg, { method, color, modifier } = {}) => {
+	console[method || 'log'](chalk[color || modifier || 'gray'](msg));
+};
+
 // --------------------------------------------------
 // PUBLIC API
 // --------------------------------------------------
 module.exports = {
-	normalizeDir,
 	ensureRepoIsClean,
 	ensureRepoIsSynced,
+	log,
+	normalizeDir,
 };
