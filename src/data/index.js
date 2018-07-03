@@ -7,9 +7,15 @@ module.exports = {
 		GB_RELEASE_KEY: 'gb-deploy', /// TODO: Update this, or consolidate with `GB_DEPLOY_KEY`?
 	},
 	MESSAGES: {
+		DEPLOY: {
+			FAIL: 'Deploy failed! Please review the current state of the repository before proceeding.',
+			SUCCESS: 'Deploy succeeded!',
+		},
 		RELEASE: {
-			PREFIX: 'Commits since last release:',
 			DEFAULT: 'Current release does not include any commits.',
+			FAIL: 'Release failed! Please review the current state of the repository before proceeding.',
+			PREFIX: 'Commits since last release:',
+			SUCCESS: 'Release succeeded!',
 		},
 		ERROR: {
 			FAILED_TO_BUILD: 'Failed to build. Please ensure that the target environment includes a valid `buildScript`',
