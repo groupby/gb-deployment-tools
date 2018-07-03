@@ -87,7 +87,9 @@ class GbRelease extends GbBase {
 				}
 
 				// Bump version, commit, tag, and push.
+				console.log( MESSAGES.LIFECYCLE.PRE_RELEASE );
 				await this.doRelease();
+				console.log( MESSAGES.LIFECYCLE.POST_RELEASE );
 
 				// Archive current state of development branch.
 				let archiveBranch = `${BRANCHES.DEVELOPMENT}-${this.getTransientVersion()}`;
@@ -103,19 +105,31 @@ class GbRelease extends GbBase {
 				await this.updatePrs();
 
 				// Build.
+				console.log( MESSAGES.LIFECYCLE.PRE_BUILD );
 				await this.doBuild();
+				console.log( MESSAGES.LIFECYCLE.POST_BUILD );
 
 				// Clone.
+				console.log( MESSAGES.LIFECYCLE.PRE_CLONE );
 				await this.doClone();
+				console.log( MESSAGES.LIFECYCLE.POST_CLONE );
 
 				// To migrate everything: generate builds strings; parse them; and pass the results to 'doMigrate'.
+				console.log( MESSAGES.LIFECYCLE.MIGRATE );
 				let buildStrings = Object.keys( this.getData( 'builds' ) ).map( build => `${build}@${semver.inc( this.clientPkg.version, this.releaseType )}` );
 				let builds = this.parseBuildStrings( buildStrings );
 				await this.doMigrate( builds );
+				console.log( MESSAGES.LIFECYCLE.POST_MIGRATE );
 
 				// Commit, clean up, and restore production branch.
+				console.log( MESSAGES.LIFECYCLE.PRE_COMMIT );
 				await this.doCommit( { builds, type: 'release' } );
+				console.log( MESSAGES.LIFECYCLE.POST_COMMIT );
+
+				console.log( MESSAGES.LIFECYCLE.PRE_CLEAN );
 				await this.doCleanup();
+				console.log( MESSAGES.LIFECYCLE.POST_CLEAN );
+
 				await git.checkout( BRANCHES.PRODUCTION );
 
 				resolve( MESSAGES.RELEASE.SUCCESS );
