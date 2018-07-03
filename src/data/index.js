@@ -28,6 +28,7 @@ module.exports = {
 			INVALID_DATA: 'Whoops, looks like this project is not set up for use with `GbDeploy`',
 			INVALID_BUILDS: 'Must include one or more valid builds',
 			INVALID_ENV: 'Must include a valid environment',
+			MISSING_GITHUB_TOKEN: 'Whoops, please ensure that the `GITHUB_CODE` environment variable exists, and points to a valid Github token.',
 			MISSING_RELEASE: 'Please include a release type.',
 			MISSING_REPO_NAME: 'Please include the name of the remote repository (either via the command line, or within `package.json`)',
 			MISSING_REPO_OWNER: 'Please include the owner of the remote repository (either via the command line, or within `package.json`)',

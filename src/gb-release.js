@@ -48,6 +48,10 @@ class GbRelease extends GbBase {
 	run() {
 		return new Promise( async ( resolve, reject ) => {
 			try {
+				if ( !process.env.GITHUB_CODE ) {
+					throw new Error( MESSAGES.ERROR.MISSING_GITHUB_TOKEN );
+				}
+
 				if ( !this.releaseType ) {
 					throw new Error( `${MESSAGES.ERROR.MISSING_RELEASE} <${RELEASE_TYPES.join( '|' ).toLowerCase()}>` );
 				}
@@ -133,7 +137,7 @@ class GbRelease extends GbBase {
 		return new Promise( ( resolve, reject ) => {
 			githubClient.authenticate( {
 				type: 'token',
-				token: process.env.GITHUB_CODE, /// TODO: Ensure that this exists...
+				token: process.env.GITHUB_CODE,
 			} );
 
 			githubClient.pullRequests.getAll( {
@@ -147,12 +151,11 @@ class GbRelease extends GbBase {
 				const productionPrs = allPrs.filter( pr => pr.state === 'open' && pr.base.ref === BRANCHES.PRODUCTION );
 				return this.openPrs( productionPrs );
 			} ).then( () => {
-				resolve( true ); /// TODO: Determine 'success' message.
+				resolve();
 			} ).catch( reject );
 		} );
 	}
 
-	/// TODO: Consider moving this to `GbBase`.
 	doRelease() {
 		return new Promise( async ( resolve, reject ) => {
 			const from = execSync( 'git describe --tags --abbrev=0', { encoding: 'utf-8' } ).trim();
@@ -161,7 +164,7 @@ class GbRelease extends GbBase {
 
 			githubClient.authenticate( {
 				type: 'token',
-				token: process.env.GITHUB_CODE, /// TODO: Ensure that this exists...
+				token: process.env.GITHUB_CODE,
 			} );
 
 			const commitData = await this.getCommitMessages( { from, to } );
