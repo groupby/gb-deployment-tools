@@ -43,7 +43,7 @@ if ( flags.h ) {
 new GbDeploy( {
 	builds: input,
 	opts: flags,
-	data: ( clientPkg[ KEYS.GB_DEPLOY_KEY ] || {} ),
+	data: ( clientPkg[ KEYS.MAIN ] || {} ),
 	clientPkg,
 } )
 	.run()

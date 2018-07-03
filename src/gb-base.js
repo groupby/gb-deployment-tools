@@ -20,7 +20,7 @@ class GbBase {
 	parseBuildStrings( builds=[] ) {
 		builds = Array.isArray( builds ) ? builds : [ builds ];
 
-		let validBuilds = this.getData( KEYS.GB_DEPLOY_BUILDS_KEY );
+		let validBuilds = this.getData( KEYS.BUILDS );
 
 		return builds
 			// Split.
@@ -86,7 +86,7 @@ class GbBase {
 	 */
 	doBuild() {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( KEYS.GB_DEPLOY_CONFIG_KEY );
+			let config = this.getData( KEYS.CONFIG );
 
 			let { localBuildsPath = './' } = config;
 
@@ -97,7 +97,7 @@ class GbBase {
 			f.send( {
 				action: 'BUILD',
 				payload: {
-					env: this.getData( KEYS.GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
+					env: this.getData( KEYS.ENVS )[ this.settings.environment ],
 				},
 			} );
 
@@ -121,7 +121,7 @@ class GbBase {
 	 */
 	doCleanup() {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( KEYS.GB_DEPLOY_CONFIG_KEY );
+			let config = this.getData( KEYS.CONFIG );
 
 			let { repoDest = './' } = config;
 
@@ -148,7 +148,7 @@ class GbBase {
 			f.send( {
 				action: 'CLONE',
 				payload: {
-					config: this.getData( KEYS.GB_DEPLOY_CONFIG_KEY ),
+					config: this.getData( KEYS.CONFIG ),
 				},
 			} );
 
@@ -178,8 +178,8 @@ class GbBase {
 				action: 'DEPLOY',
 				payload: {
 					...{
-						config: this.getData( KEYS.GB_DEPLOY_CONFIG_KEY ),
-						env: this.getData( KEYS.GB_DEPLOY_ENVS_KEY )[ this.settings.environment ],
+						config: this.getData( KEYS.CONFIG ),
+						env: this.getData( KEYS.ENVS )[ this.settings.environment ],
 					},
 					...data,
 				},
@@ -205,7 +205,7 @@ class GbBase {
 	 */
 	doMigrate( builds=[] ) {
 		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( KEYS.GB_DEPLOY_CONFIG_KEY );
+			let config = this.getData( KEYS.CONFIG );
 
 			let { repoDest = './', repoBuildsPath = './' } = config;
 

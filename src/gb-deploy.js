@@ -54,11 +54,11 @@ class GbDeploy extends GbBase {
 				}
 
 				if ( !this.validateBuilds()) {
-					throw new Error( `${MESSAGES.ERROR.INVALID_BUILDS}: <${Object.keys( this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ) ).join( '|' )}>` );
+					throw new Error( `${MESSAGES.ERROR.INVALID_BUILDS}: <${Object.keys( this.getData( KEYS.BUILDS ) ).join( '|' )}>` );
 				}
 
 				if ( !this.validateEnvironment() ) {
-					throw new Error( `${MESSAGES.ERROR.INVALID_ENV}: <${Object.keys( this.getData( KEYS.GB_DEPLOY_ENVS_KEY ) ).join( '|' )}>` );
+					throw new Error( `${MESSAGES.ERROR.INVALID_ENV}: <${Object.keys( this.getData( KEYS.ENVS ) ).join( '|' )}>` );
 				}
 
 				// Perform additional validation for production deployments.
@@ -140,9 +140,9 @@ class GbDeploy extends GbBase {
 	 */
 	validateData() {
 		let vals = [
-			this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ),
-			this.getData( KEYS.GB_DEPLOY_ENVS_KEY ),
-			this.getData( KEYS.GB_DEPLOY_CONFIG_KEY ),
+			this.getData( KEYS.BUILDS ),
+			this.getData( KEYS.ENVS ),
+			this.getData( KEYS.CONFIG ),
 		];
 
 		/// TODO: Seems brittle...
@@ -155,7 +155,7 @@ class GbDeploy extends GbBase {
 	 * @return {boolean}
 	 */
 	validateEnvironment() {
-		return Object.keys( this.getData( KEYS.GB_DEPLOY_ENVS_KEY ) ).includes( this.settings.environment );
+		return Object.keys( this.getData( KEYS.ENVS ) ).includes( this.settings.environment );
 	}
 
 	/**
@@ -164,7 +164,7 @@ class GbDeploy extends GbBase {
 	 * @return {boolean}
 	 */
 	validateBuilds() {
-		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getData( KEYS.GB_DEPLOY_BUILDS_KEY ) ).includes( build.name ) );
+		return !!this.builds && this.builds.length && this.builds.every( build => Object.keys( this.getData( KEYS.BUILDS ) ).includes( build.name ) );
 	}
 }
 

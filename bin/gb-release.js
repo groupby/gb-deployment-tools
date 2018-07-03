@@ -39,7 +39,7 @@ if ( flags.h ) {
 new GbRelease( {
 	releaseType: input[ 0 ],
 	opts: flags,
-	data: ( clientPkg[ KEYS.GB_RELEASE_KEY ] || {} ),
+	data: ( clientPkg[ KEYS.MAIN ] || {} ),
 	clientPkg,
 } )
 	.run()
