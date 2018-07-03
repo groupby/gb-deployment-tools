@@ -2,34 +2,18 @@
 // IMPORT MODULES
 // --------------------------------------------------
 // Node
-const { exec, execSync } = require( 'child_process' );
+const { execSync } = require( 'child_process' );
 
 // --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
 const doBuild = ( data = {} ) => {
-	let {
-		env = {},
-	} = data;
-
-	let {
-		buildScript = '',
-	} = env;
-
-	if (
-		!buildScript
-	) {
+	try {
+		execSync( data.env.buildScript );
+		process.exit( 0 );
+	} catch ( err ) {
 		process.exit( 1 );
 	}
-
-	/// TODO
-	exec( buildScript, ( err, stdout, stderr ) => {
-		if ( err ) {
-			process.exit( 1 );
-		} else {
-			process.exit( 0 );
-		}
-	} );
 };
 
 // --------------------------------------------------

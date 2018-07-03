@@ -136,8 +136,7 @@ const doCommit = ( data ) => {
  * @param {Object} build
  * @return {Object}
  */
-/// TODO: Refactor
-const formatBuildData = ( build ) => {
+const formatBuildData = ( build = {} ) => {
 	let {
 		resolvedFilePrefix = ''
 	} = build;
