@@ -2,50 +2,50 @@
 // IMPORT MODULES
 // --------------------------------------------------
 // Node
-const { exec, execSync } = require( 'child_process' );
-const path = require( 'path' );
+const { exec, execSync } = require('child_process');
+const path = require('path');
 
 // Vendor
-const cpFile = require( 'cp-file' );
+const cpFile = require('cp-file');
 
 // --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
-const doMigrate = ( data = {} ) => {
-	let {
+const doMigrate = (data = {}) => {
+	const {
 		paths = [],
 	} = data;
 
 	if (
 		!paths
-		|| !Array.isArray( paths )
+		|| !Array.isArray(paths)
 		|| !paths.length
 	) {
-		process.exit( 1 );
+		process.exit(1);
 	}
 
-	let promises = paths.map( ( { src, dest } ) => cpFile( src, dest ) );
+	const promises = paths.map(({ src, dest }) => cpFile(src, dest));
 
-	Promise.all( promises )
-		.then( () => {
-			process.exit( 0 );
-		} )
-		.catch( err => {
-			process.exit( 1 );
-		} );
+	Promise.all(promises)
+		.then(() => {
+			process.exit(0);
+		})
+		.catch((err) => {
+			process.exit(1);
+		});
 };
 
 // --------------------------------------------------
 // INIT
 // --------------------------------------------------
-process.on( 'message', ( data = {} ) => {
-	switch ( data.action ) {
-		case 'MIGRATE':
-			doMigrate( data.payload );
-			break;
-		default:
-			console.log( `FAILED TO MATCH ACTION: ${data.action}` );
-			process.exit( 1 );
-			break;
+process.on('message', (data = {}) => {
+	switch (data.action) {
+	case 'MIGRATE':
+		doMigrate(data.payload);
+		break;
+	default:
+		console.log(`FAILED TO MATCH ACTION: ${data.action}`);
+		process.exit(1);
+		break;
 	}
-} );
+});

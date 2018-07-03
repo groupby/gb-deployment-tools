@@ -1,14 +1,14 @@
 // Node
-const path = require( 'path' );
-const { fork } = require( 'child_process' );
+const path = require('path');
+const { fork } = require('child_process');
 
 // Vendor
-const del = require( 'del' );
-const moment = require( 'moment' );
-const semver = require( 'semver' );
+const del = require('del');
+const moment = require('moment');
+const semver = require('semver');
 
-const { KEYS, MESSAGES } = require( './data' );
-const utils = require( './utils' );
+const { KEYS, MESSAGES } = require('./data');
+const utils = require('./utils');
 
 class GbBase {
 	/**
@@ -17,26 +17,26 @@ class GbBase {
 	 * @param {Array<string>} builds
 	 * @return {Array<Object>}
 	 */
-	parseBuildStrings( builds=[] ) {
-		builds = Array.isArray( builds ) ? builds : [ builds ];
+	parseBuildStrings(builds = []) {
+		builds = Array.isArray(builds) ? builds : [builds];
 
 		const defaults = { files: [] };
 
-		let validBuilds = this.getData( KEYS.BUILDS );
+		const validBuilds = this.getData(KEYS.BUILDS);
 
 		return builds
 			// Split.
-			.map( build => build.split( '@' ) )
+			.map(build => build.split('@'))
 			// Coerce to object.
-			.map( ( [ name, version ] ) => ( { name, version } ) )
+			.map(([name, version]) => ({ name, version }))
 			// Set version if required.
-			.map( build => ( semver.valid( build.version ) ? build : { ...build, ...{ version: this.getTransientVersion() } } ) )
+			.map(build => (semver.valid(build.version) ? build : { ...build, ...{ version: this.getTransientVersion() } }))
 			// Enrich with data provided by project.
-			.map( build => ( validBuilds[ build.name ] ? { ...validBuilds[ build.name ], ...build } : build ) )
+			.map(build => (validBuilds[build.name] ? { ...validBuilds[build.name], ...build } : build))
 			// Merge with defaults.
-			.map( build => ( { ...defaults, ...build } ) )
+			.map(build => ({ ...defaults, ...build }))
 			// Resolve file names.
-			.map( build => ( { ...build, ...{ resolvedFiles: this.getResolvedFileNames( build ) } } ) );
+			.map(build => ({ ...build, ...{ resolvedFiles: this.getResolvedFileNames(build) } }));
 	}
 
 	/**
@@ -47,8 +47,8 @@ class GbBase {
 	 * @param {string} key
 	 * @return {Object}
 	 */
-	getData( key ) {
-		return this.data[ key ] || {};
+	getData(key) {
+		return this.data[key] || {};
 	}
 
 	/**
@@ -59,9 +59,9 @@ class GbBase {
 	 * @return {string}
 	 */
 	getTransientVersion() {
-		let m = moment();
+		const m = moment();
 
-		return `${m.format( 'YYYY-MM-DD' )}-${m.unix()}`;
+		return `${m.format('YYYY-MM-DD')}-${m.unix()}`;
 	}
 
 	/**
@@ -70,17 +70,17 @@ class GbBase {
 	 * @param {Object} build
 	 * @return {Array}
 	 */
-	getResolvedFileNames( build = {} ) {
-		if ( !build || typeof build !== 'object' || !build.files || !build.files.length ) {
+	getResolvedFileNames(build = {}) {
+		if (!build || typeof build !== 'object' || !build.files || !build.files.length) {
 			return null;
 		}
 
 		return build.files
-			.map( file => {
-				let fileData = path.parse( file.src );
+			.map((file) => {
+				const fileData = path.parse(file.src);
 
 				return `${file.base || fileData.name}-${build.version}${fileData.ext}`;
-			} );
+			});
 	}
 
 	/**
@@ -89,33 +89,33 @@ class GbBase {
 	 * @return {Promise}
 	 */
 	doBuild() {
-		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( KEYS.CONFIG );
+		return new Promise((resolve, reject) => {
+			const config = this.getData(KEYS.CONFIG);
 
 			let { localBuildsPath = './' } = config;
 
-			localBuildsPath = utils.normalizeDir( localBuildsPath );
+			localBuildsPath = utils.normalizeDir(localBuildsPath);
 
-			let f = fork( `${__dirname}/scripts/build.js`, [], { cwd: `${process.cwd()}/${localBuildsPath}` } );
+			const f = fork(`${__dirname}/scripts/build.js`, [], { cwd: `${process.cwd()}/${localBuildsPath}` });
 
-			f.send( {
+			f.send({
 				action: 'BUILD',
 				payload: {
-					env: this.getData( KEYS.ENVS )[ this.settings.environment ],
+					env: this.getData(KEYS.ENVS)[this.settings.environment],
 				},
-			} );
+			});
 
-			f.on( 'close', ( exitCode ) => {
-				switch ( +exitCode ) {
-					case 0:
-						resolve();
-						break;
-					default:
-						reject( new Error( MESSAGES.ERROR.FAILED_TO_BUILD ) );
-						break;
+			f.on('close', (exitCode) => {
+				switch (+exitCode) {
+				case 0:
+					resolve();
+					break;
+				default:
+					reject(new Error(MESSAGES.ERROR.FAILED_TO_BUILD));
+					break;
 				}
-			} );
-		} );
+			});
+		});
 	}
 
 	/**
@@ -124,20 +124,20 @@ class GbBase {
 	 * @return {Promise}
 	 */
 	doCleanup() {
-		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( KEYS.CONFIG );
+		return new Promise((resolve, reject) => {
+			const config = this.getData(KEYS.CONFIG);
 
 			let { repoDest = './' } = config;
 
-			repoDest = utils.normalizeDir( repoDest );
+			repoDest = utils.normalizeDir(repoDest);
 
-			if ( !repoDest ) {
-				reject( new Error( MESSAGES.ERROR.FAILED_TO_CLEAN ) );
+			if (!repoDest) {
+				reject(new Error(MESSAGES.ERROR.FAILED_TO_CLEAN));
 				return;
 			}
 
-			del( repoDest ).then( resolve, reject );
-		} );
+			del(repoDest).then(resolve, reject);
+		});
 	}
 
 	/**
@@ -146,27 +146,27 @@ class GbBase {
 	 * @return {Promise}
 	 */
 	doClone() {
-		return new Promise( ( resolve, reject ) => {
-			let f = fork( `${__dirname}/scripts/clone.js` );
+		return new Promise((resolve, reject) => {
+			const f = fork(`${__dirname}/scripts/clone.js`);
 
-			f.send( {
+			f.send({
 				action: 'CLONE',
 				payload: {
-					config: this.getData( KEYS.CONFIG ),
+					config: this.getData(KEYS.CONFIG),
 				},
-			} );
+			});
 
-			f.on( 'close', ( exitCode ) => {
-				switch ( +exitCode ) {
-					case 0:
-						resolve();
-						break;
-					default:
-						reject( new Error( MESSAGES.ERROR.FAILED_TO_CLONE ) );
-						break;
+			f.on('close', (exitCode) => {
+				switch (+exitCode) {
+				case 0:
+					resolve();
+					break;
+				default:
+					reject(new Error(MESSAGES.ERROR.FAILED_TO_CLONE));
+					break;
 				}
-			} );
-		} );
+			});
+		});
 	}
 
 	/**
@@ -174,32 +174,32 @@ class GbBase {
 	 *
 	 * @return {Promise}
 	 */
-	doCommit( data = {} ) {
-		return new Promise( ( resolve, reject ) => {
-			let f = fork( `${__dirname}/scripts/commit.js` );
+	doCommit(data = {}) {
+		return new Promise((resolve, reject) => {
+			const f = fork(`${__dirname}/scripts/commit.js`);
 
-			f.send( {
+			f.send({
 				action: 'COMMIT',
 				payload: {
 					...{
-						config: this.getData( KEYS.CONFIG ),
-						env: this.getData( KEYS.ENVS )[ this.settings.environment ],
+						config: this.getData(KEYS.CONFIG),
+						env: this.getData(KEYS.ENVS)[this.settings.environment],
 					},
 					...data,
 				},
-			} );
+			});
 
-			f.on( 'close', ( exitCode ) => {
-				switch ( +exitCode ) {
-					case 0:
-						resolve();
-						break;
-					default:
-						reject( new Error( MESSAGES.ERROR.FAILED_TO_COMMIT ) );
-						break;
+			f.on('close', (exitCode) => {
+				switch (+exitCode) {
+				case 0:
+					resolve();
+					break;
+				default:
+					reject(new Error(MESSAGES.ERROR.FAILED_TO_COMMIT));
+					break;
 				}
-			} );
-		} );
+			});
+		});
 	}
 
 	/**
@@ -207,44 +207,42 @@ class GbBase {
 	 *
 	 * @return {Promise}
 	 */
-	doMigrate( builds=[] ) {
-		return new Promise( ( resolve, reject ) => {
-			let config = this.getData( KEYS.CONFIG );
+	doMigrate(builds = []) {
+		return new Promise((resolve, reject) => {
+			const config = this.getData(KEYS.CONFIG);
 
 			let { repoDest = './', repoBuildsPath = './' } = config;
 
-			repoDest = utils.normalizeDir( repoDest );
-			repoBuildsPath = utils.normalizeDir( repoBuildsPath );
+			repoDest = utils.normalizeDir(repoDest);
+			repoBuildsPath = utils.normalizeDir(repoBuildsPath);
 
-			let f = fork( `${__dirname}/scripts/migrate.js` );
+			const f = fork(`${__dirname}/scripts/migrate.js`);
 
-			let paths = builds
-				.map( build => {
-					return build.files.map( ( file, i ) => ( {
-						src: file.src,
-						dest: `${repoDest}${repoBuildsPath}${build.resolvedFiles[ i ]}`,
-					} ) );
-				} )
-				.reduce( ( acc, arr ) => { return [ ...acc, ...arr ] }, [] );
+			const paths = builds
+				.map(build => build.files.map((file, i) => ({
+					src: file.src,
+					dest: `${repoDest}${repoBuildsPath}${build.resolvedFiles[i]}`,
+				})))
+				.reduce((acc, arr) => [...acc, ...arr], []);
 
-			f.send( {
+			f.send({
 				action: 'MIGRATE',
 				payload: {
 					paths,
 				},
-			} );
+			});
 
-			f.on( 'close', ( exitCode ) => {
-				switch ( +exitCode ) {
-					case 0:
-						resolve();
-						break;
-					default:
-						reject( new Error( MESSAGES.ERROR.FAILED_TO_MIGRATE ) );
-						break;
+			f.on('close', (exitCode) => {
+				switch (+exitCode) {
+				case 0:
+					resolve();
+					break;
+				default:
+					reject(new Error(MESSAGES.ERROR.FAILED_TO_MIGRATE));
+					break;
 				}
-			} );
-		} );
+			});
+		});
 	}
 }
 

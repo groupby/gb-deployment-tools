@@ -1,7 +1,7 @@
 // --------------------------------------------------
 // DECLARE FUNCTIONS
 // --------------------------------------------------
-const normalizeDir = ( str = '' ) => {
+const normalizeDir = (str = '') => {
 	if (
 		!str
 		|| typeof str !== 'string'
@@ -9,10 +9,10 @@ const normalizeDir = ( str = '' ) => {
 		return str;
 	}
 
-	return ( str[ str.length - 1 ] === '/' ) ? str : `${str}/`;
+	return (str[str.length - 1] === '/') ? str : `${str}/`;
 };
 
-const ensureRepoIsSynced = ( statusData = {} ) => {
+const ensureRepoIsSynced = (statusData = {}) => {
 	if (
 		!statusData
 		|| typeof statusData !== 'object'
@@ -20,10 +20,10 @@ const ensureRepoIsSynced = ( statusData = {} ) => {
 		return null;
 	}
 
-	return ( !statusData.ahead && !statusData.behind );
+	return (!statusData.ahead && !statusData.behind);
 };
 
-const ensureRepoIsClean = ( statusData = {} ) => {
+const ensureRepoIsClean = (statusData = {}) => {
 	if (
 		!statusData
 		|| typeof statusData !== 'object'
@@ -43,7 +43,7 @@ const ensureRepoIsClean = ( statusData = {} ) => {
 	}
 
 	return true;
-}
+};
 
 // --------------------------------------------------
 // PUBLIC API

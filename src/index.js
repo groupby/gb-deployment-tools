@@ -1,5 +1,5 @@
-const GbDeploy = require( './gb-deploy' );
-const GbRelease = require( './gb-release' );
+const GbDeploy = require('./gb-deploy');
+const GbRelease = require('./gb-release');
 
 module.exports = {
 	GbDeploy,
