@@ -31,10 +31,10 @@ class GbBase {
 			.map( ( [ name, version ] ) => ( { name, version } ) )
 			// Set version if required.
 			.map( build => ( semver.valid( build.version ) ? build : { ...build, ...{ version: this.getTransientVersion() } } ) )
-			// Merge with defaults.
-			.map( build => ( { ...defaults, ...build } ) )
 			// Enrich with data provided by project.
 			.map( build => ( validBuilds[ build.name ] ? { ...validBuilds[ build.name ], ...build } : build ) )
+			// Merge with defaults.
+			.map( build => ( { ...defaults, ...build } ) )
 			// Resolve file names.
 			.map( build => ( { ...build, ...{ resolvedFiles: this.getResolvedFileNames( build ) } } ) );
 	}

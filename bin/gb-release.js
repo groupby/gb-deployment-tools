@@ -22,11 +22,7 @@ const { input, flags, showHelp } = meow( `
 
 	COMMANDS:
 		-h --help
-`, {
-	flags: {
-		/// TODO
-	},
-} );
+` );
 
 // For consistency, show help menu on `-h`.
 if ( flags.h ) {
