@@ -127,6 +127,7 @@ const doCommit = (data) => {
 		}
 
 		// Consume, update, and write 'manifest' data.
+		/* eslint-disable-next-line global-require, import/no-dynamic-require */
 		const manifestData = require(`${dest}/${repoBuildsPath}/${manifest}`);
 		const newManifestData = builds.reduce((o, build) => ({ ...o, ...formatBuildData(build) }), manifestData);
 

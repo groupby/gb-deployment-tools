@@ -52,6 +52,7 @@ const ensureRepoIsClean = (statusData = {}) => {
 };
 
 const log = (msg, { method, color, modifier } = {}) => {
+	/* eslint-disable-next-line no-console */
 	console[method || 'log'](chalk[color || modifier || 'gray'](msg));
 };
 
