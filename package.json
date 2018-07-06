@@ -1,14 +1,14 @@
 {
   "name": "gb-deployment-tools",
   "version": "0.0.0",
-  "description": "",
+  "description": "Node-based tools for managing the release and deployment of GroupBy Services projects.",
   "main": "src/index.js",
   "scripts": {
     "test": "mocha",
     "lint": "eslint ./src/**/*.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "Jesse Mykolyn <jesse.mykolyn@groupbyinc.com>",
+  "license": "MIT",
   "devDependencies": {
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^13.0.0",
