@@ -95,23 +95,31 @@ class GbRelease extends GbBase {
 				console.log(chalk.gray(MESSAGES.LIFECYCLE.POST_RELEASE));
 
 				// Archive current state of development branch.
-				console.log(chalk.gray('Starting branch archive.')); // / TEMP
-				const archiveBranch = `${BRANCHES.DEVELOPMENT}-${this.getTransientVersion()}`;
-				await git.checkoutBranch(archiveBranch, `origin/${BRANCHES.DEVELOPMENT}`);
-				await git.push('origin', archiveBranch);
-				console.log(chalk.gray('Completed branch archive.')); // / TEMP
+				if (this.settings.archive) {
+					console.log(chalk.gray('Starting branch archive.')); // / TEMP
+					const archiveBranch = `${BRANCHES.DEVELOPMENT}-${this.getTransientVersion()}`;
+					await git.checkoutBranch(archiveBranch, `origin/${BRANCHES.DEVELOPMENT}`);
+					await git.push('origin', archiveBranch);
+					console.log(chalk.gray('Completed branch archive.')); // / TEMP
 
-				// Spin off new development branch from production.
-				console.log(chalk.gray('Starting branch refresh.')); // / TEMP
-				await git.checkout(BRANCHES.DEVELOPMENT);
-				await git.reset(['--hard', `origin/${BRANCHES.PRODUCTION}`]);
-				await git.push(['-u', 'origin', BRANCHES.DEVELOPMENT, '-f']);
-				console.log(chalk.gray('Completed branch refresh.')); // / TEMP
+					// Spin off new development branch from production.
+					console.log(chalk.gray('Starting branch refresh.')); // / TEMP
+					await git.checkout(BRANCHES.DEVELOPMENT);
+					await git.reset(['--hard', `origin/${BRANCHES.PRODUCTION}`]);
+					await git.push(['-u', 'origin', BRANCHES.DEVELOPMENT, '-f']);
+					console.log(chalk.gray('Completed branch refresh.')); // / TEMP
+				} else {
+					console.log(chalk.gray('Skipping branch archive.')); // / TEMP
+				}
 
 				// Refresh PRs.
-				console.log(chalk.gray('Starting PR update.')); // / TEMP
-				await this.updatePrs();
-				console.log(chalk.gray('Completed PR update.')); // / TEMP
+				if (this.settings.refreshPrs) {
+					console.log(chalk.gray('Starting PR update.')); // / TEMP
+					await this.updatePrs();
+					console.log(chalk.gray('Completed PR update.')); // / TEMP
+				} else {
+					console.log(chalk.gray('Skipping PR update.')); // / TEMP
+				}
 
 				// Build.
 				console.log(chalk.gray(MESSAGES.LIFECYCLE.PRE_BUILD));
@@ -139,9 +147,11 @@ class GbRelease extends GbBase {
 				await this.doCleanup();
 				console.log(chalk.gray(MESSAGES.LIFECYCLE.POST_CLEAN));
 
-				console.log(chalk.gray('Starting branch reset.')); // / TEMP
-				await git.checkout(BRANCHES.PRODUCTION);
-				console.log(chalk.gray('Completed branch reset.')); // / TEMP
+				if (this.settings.archive) {
+					console.log(chalk.gray('Starting branch reset.')); // / TEMP
+					await git.checkout(BRANCHES.PRODUCTION);
+					console.log(chalk.gray('Completed branch reset.')); // / TEMP
+				}
 
 				resolve(MESSAGES.RELEASE.SUCCESS);
 				return;

@@ -19,7 +19,18 @@ const { input, flags, showHelp } = meow(`
 
 	COMMANDS:
 		-h --help
-`);
+`, {
+	flags: {
+		refreshPrs: {
+			type: 'boolean',
+			alias: 'r',
+		},
+		archive: {
+			type: 'boolean',
+			alias: 'a',
+		},
+	},
+});
 
 // For consistency, show help menu on `-h`.
 if (flags.h) {
