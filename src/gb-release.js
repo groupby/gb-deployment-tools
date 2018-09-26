@@ -96,29 +96,29 @@ class GbRelease extends GbBase {
 
 				// Archive current state of development branch.
 				if (this.settings.archive) {
-					console.log(chalk.gray('Starting branch archive.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.PRE_ARCHIVE));
 					const archiveBranch = `${BRANCHES.DEVELOPMENT}-${this.getTransientVersion()}`;
 					await git.checkoutBranch(archiveBranch, `origin/${BRANCHES.DEVELOPMENT}`);
 					await git.push('origin', archiveBranch);
-					console.log(chalk.gray('Completed branch archive.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.POST_ARCHIVE));
 
 					// Spin off new development branch from production.
-					console.log(chalk.gray('Starting branch refresh.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.PRE_BRANCH_REFRESH));
 					await git.checkout(BRANCHES.DEVELOPMENT);
 					await git.reset(['--hard', `origin/${BRANCHES.PRODUCTION}`]);
 					await git.push(['-u', 'origin', BRANCHES.DEVELOPMENT, '-f']);
-					console.log(chalk.gray('Completed branch refresh.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.POST_BRANCH_REFRESH));
 				} else {
-					console.log(chalk.gray('Skipping branch archive.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.SKIP_ARCHIVE));
 				}
 
 				// Refresh PRs.
 				if (this.settings.refreshPrs) {
-					console.log(chalk.gray('Starting PR update.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.PRE_PR_REFRESH));
 					await this.updatePrs();
-					console.log(chalk.gray('Completed PR update.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.POST_PR_REFRESH));
 				} else {
-					console.log(chalk.gray('Skipping PR update.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.SKIP_PR_REFRESH));
 				}
 
 				// Build.
@@ -148,9 +148,9 @@ class GbRelease extends GbBase {
 				console.log(chalk.gray(MESSAGES.LIFECYCLE.POST_CLEAN));
 
 				if (this.settings.archive) {
-					console.log(chalk.gray('Starting branch reset.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.PRE_BRANCH_RESET));
 					await git.checkout(BRANCHES.PRODUCTION);
-					console.log(chalk.gray('Completed branch reset.')); // / TEMP
+					console.log(chalk.gray(MESSAGES.LIFECYCLE.POST_BRANCH_RESET));
 				}
 
 				resolve(MESSAGES.RELEASE.SUCCESS);
