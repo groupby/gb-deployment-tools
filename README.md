@@ -2,6 +2,7 @@
 
 ## Table of Contents
 - [About](#about)
+- [Prerequisites](#prerequisites)
 - [Installation](#installation)
 - [Setup](#setup)
 - [Usage](#usage)
@@ -10,6 +11,15 @@
 ## About
 
 A collection of Node-based tools for managing the release and deployment of GroupBy Services projects.
+
+## Prerequisites
+
+Before installing the GB Deployment Tools in a given project, please ensure that each of the following statements is true:
+- The project includes a 'source code' repository, as well as a separate 'builds' repository.
+- You have read and write access to both the 'source code' and 'builds' repositories.
+- The 'builds' repository includes at least 1x 'manifest' file.
+- You have set and exposed the `GITHUB_CODE` environment variable.
+- The project exposes a command which can be used to generate compiled 'dist' files.
 
 ## Installation
 
