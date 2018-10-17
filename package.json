@@ -1,6 +1,6 @@
 {
   "name": "gb-deployment-tools",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Node-based tools for managing the release and deployment of GroupBy Services projects.",
   "main": "src/index.js",
   "scripts": {
